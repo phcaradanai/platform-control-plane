@@ -333,37 +333,30 @@ dependency directories are tracked.
 ### Git / GitHub publication status
 
 - Branch `feat/backstage-app-factory-phase-1` created from `master`
-  (`create-app`'s original `c0837ea` "Initial commit").
-- `gh auth status`: **not logged in** in this environment - no GitHub
-  credentials available.
-- `git remote -v`: **no remote configured** - this repository has never
-  been pushed anywhere.
-- Per the publish instructions' rule to stop before push and report the
-  exact manual action when repository creation/auth is unavailable:
-  **publication to `phcaradanai/platform-control-plane` was not
-  performed.** The commit described below exists only in this local
-  working copy, on the `feat/backstage-app-factory-phase-1` branch.
-
-**Manual action required to complete publication:**
-
-```bash
-gh auth login
-git remote add origin https://github.com/phcaradanai/platform-control-plane.git
-# If the repository does not exist yet:
-gh repo create phcaradanai/platform-control-plane --private --source=. --remote=origin
-git push -u origin feat/backstage-app-factory-phase-1
-gh pr create --draft --base main --head feat/backstage-app-factory-phase-1 \
-  --title "feat(platform): Backstage App Factory Phase 1" \
-  --body-file <PR description, see publish prompt>
-```
-
-No push, repository creation, or PR was attempted or claimed as done.
-
-**Branch-name note:** this local repository's default branch (from
-`create-app`'s `git init`) is `master`, not `main`. The publish
-instructions target a PR into `main`. If the remote repository is
-created fresh via `gh repo create --source=.`, its default branch will
-also be `master` unless renamed. Before opening the PR, either rename
-the local default branch to `main` (`git branch -m master main`) or
-confirm the target repository already has a `main` branch to PR
-against - do not assume `main` exists without checking.
+  (`create-app`'s original `c0837ea` "Initial commit"), committed as
+  `4e56dd8` "feat(platform): establish Backstage app factory foundation".
+- At that point `gh auth status` reported not logged in and
+  `git remote -v` was empty - push was correctly withheld and the
+  manual-action commands were reported instead of a fabricated success.
+- Between that point and the next step, GitHub credentials became
+  available in this environment (`gh auth status` now shows an
+  authenticated `phcaradanai` account) and the remote
+  `https://github.com/phcaradanai/platform-control-plane.git` was
+  configured, with `feat/backstage-app-factory-phase-1` already pushed.
+- The local default branch was renamed `master` -> `main` (still pointing
+  at `c0837ea`, unmodified) and pushed as `origin/main`; the GitHub
+  repository's default branch was set to `main` via
+  `gh repo edit --default-branch main` (confirmed via
+  `gh repo view --json defaultBranchRef`).
+- **Draft PR opened**: [#1](https://github.com/phcaradanai/platform-control-plane/pull/1),
+  `feat(platform): Backstage App Factory Phase 1`,
+  `feat/backstage-app-factory-phase-1` -> `main`, draft, unmerged.
+- `gh pr checks 1`: **no checks reported** - this repository has no CI
+  workflow of its own at the root (`.github/workflows/ci.yml` exists only
+  inside `templates/platform-mfe-app/skeleton/`, for *generated*
+  applications, not this control-plane repo). Nothing was waited on or
+  fabricated as a check result.
+- Repository visibility: **private** (`gh repo view`), matching the
+  "private unless told otherwise" rule.
+- No force-push, no history rewrite, no direct push to `main` - all work
+  landed via the feature branch and an unmerged draft PR.
