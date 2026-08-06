@@ -1,0 +1,174 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-template
+kind: Template
+metadata:
+  name: platform-mfe-app
+  title: Platform MFE Application
+  description: >-
+    Creates a GitHub repository for a new Platform MFE Application from a
+    controlled skeleton and registers it in the Software Catalog. Runtime
+    module federation, Nx capability composition, and deployment are added
+    in a later phase - this template only produces the application
+    foundation and records requested capabilities.
+spec:
+  owner: group:default/guests
+  type: service
+
+  parameters:
+    - title: Application identity
+      required:
+        - name
+        - title
+        - owner
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique, URL-safe identifier for the application (used as repo name and catalog component name)
+          pattern: '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'
+          maxLength: 63
+          ui:autofocus: true
+        title:
+          title: Title
+          type: string
+          description: Human-readable display name shown in the catalog and generated README
+        description:
+          title: Description
+          type: string
+          description: Short description of what the application does
+          ui:widget: textarea
+          ui:options:
+            rows: 3
+        owner:
+          title: Owner
+          type: string
+          description: The team or group that owns this application
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    - title: Repository
+      required:
+        - repoUrl
+        - repoVisibility
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          description: The GitHub repository that will be created. The default branch is always `main`.
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+        repoVisibility:
+          title: Repository Visibility
+          type: string
+          description: Whether the created GitHub repository is public or private
+          enum:
+            - private
+            - public
+          default: private
+          ui:widget: radio
+
+    - title: Application metadata
+      required:
+        - lifecycle
+        - mode
+      properties:
+        lifecycle:
+          title: Lifecycle
+          type: string
+          description: The maturity of the application
+          enum:
+            - experimental
+            - production
+          default: experimental
+          ui:widget: radio
+        mode:
+          title: Application mode
+          type: string
+          description: How this application will run once runtime composition is available
+          enum:
+            - platform-mfe
+            - standalone
+            - standalone-and-mfe
+          default: platform-mfe
+          ui:widget: radio
+
+    - title: Capabilities
+      properties:
+        capabilities:
+          title: Requested capabilities
+          type: array
+          description: >-
+            Curated platform capabilities to request for this application.
+            These are recorded in platform-app.json as requested capabilities
+            for the later Nx composition phase - selecting a capability here
+            does not install or configure it yet.
+          items:
+            type: string
+            enum:
+              - authentication
+              - rbac
+              - dashboard
+              - reports
+              - history
+              - audit-log
+              - notifications
+              - tenant
+              - theme
+              - i18n
+              - observability
+              - desktop-ready
+              - mobile-ready
+          uniqueItems: true
+          ui:widget: checkboxes
+          default: []
+
+  steps:
+    # Renders the controlled skeleton into the working directory. Workflow
+    # files are copied verbatim (copyWithoutRender) because their
+    # `${{ ... }}` GitHub Actions expressions would otherwise be evaluated
+    # as scaffolder template syntax and stripped out.
+    - id: fetchBase
+      name: Fetch Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        copyWithoutRender:
+          - .github/workflows/**
+        values:
+          name: ${{ parameters.name }}
+          title: ${{ parameters.title }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          mode: ${{ parameters.mode }}
+          lifecycle: ${{ parameters.lifecycle }}
+          capabilities: ${{ parameters.capabilities }}
+          repo: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.repoVisibility }}
+        defaultBranch: 'main'
+        gitCommitMessage: 'Initial commit from Platform MFE Application template'
+
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
