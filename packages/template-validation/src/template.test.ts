@@ -242,14 +242,17 @@ describe('platform-mfe-app skeleton', () => {
       'utf8',
     );
     expect(ci).toContain('cache: npm');
-    expect(ci).toContain('corepack enable');
-    expect(ci).toContain('npm ci');
-    expect(ci).not.toContain('npm install');
-    // The active npm must be proven to match the declared packageManager
-    // version before any install runs (guards against Node-bundled npm).
+    // The declared npm version is installed explicitly (corepack's shim
+    // does not reliably win PATH on runners), then proven active before
+    // any project install runs.
+    expect(ci).toContain('Install declared npm version');
     expect(ci).toContain('Verify npm version matches packageManager');
     expect(ci).toContain('npm --version');
     expect(ci).toContain("require('./package.json').packageManager");
+    // Project dependencies install frozen via npm ci - never a bare
+    // floating `npm install` step.
+    expect(ci).toContain('- run: npm ci');
+    expect(ci).not.toContain('- run: npm install');
   });
 
   describe('rendered output', () => {

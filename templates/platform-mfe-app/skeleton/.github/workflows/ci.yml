@@ -21,14 +21,17 @@ jobs:
           node-version: 22
           cache: npm
 
-      # Enforce the exact npm version declared in package.json's
-      # packageManager field (reproducible package-manager behavior).
-      - run: corepack enable
+      # Install the exact npm version declared in package.json's
+      # packageManager field, overriding the Node-bundled npm. corepack's
+      # shim does not reliably win PATH on runners, so install explicitly.
+      - name: Install declared npm version
+        run: |
+          version="$(node -p "require('./package.json').packageManager.replace(/^npm@/, '')")"
+          npm install -g "npm@${version}"
 
-      # Fail fast if the active npm is not the declared version. corepack
-      # shims npm, but the assertion makes the guarantee explicit instead of
-      # trusting PATH ordering - a fallback to the Node-bundled npm fails
-      # here, before any install happens.
+      # Fail fast if the active npm is not the declared version. This
+      # proves the install above actually took effect before any install
+      # runs - a fallback to the Node-bundled npm fails here.
       - name: Verify npm version matches packageManager
         run: |
           expected="$(node -p "require('./package.json').packageManager")"
