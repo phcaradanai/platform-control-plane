@@ -20,7 +20,10 @@
     "lint": "backstage-cli repo lint --since origin/main",
     "lint:all": "backstage-cli repo lint",
     "prettier:check": "prettier --check .",
-    "new": "backstage-cli new"
+    "new": "backstage-cli new",
+    "dev:app": "node .yarn/releases/yarn-4.13.0.cjs workspace app start",
+    "dev:backend": "node .yarn/releases/yarn-4.13.0.cjs workspace backend start",
+    "test:e2e:smoke": "node .yarn/releases/yarn-4.13.0.cjs playwright test packages/app/e2e-tests/catalog.test.ts packages/app/e2e-tests/create.test.ts"
   },
   "backstage": {
     "cli": {
