@@ -475,6 +475,72 @@ Three disposable npm-verification repos remain as evidence
 earlier closure repos); catalog entries were unregistered after each run
 (404 on re-query).
 
+## Phase 2 Runtime Closure
+
+The Phase 1–2 foundation is now reliable from a fresh developer start, and
+the local/manual runtime flow (`start → guest → catalog → create`) is
+proven end-to-end in CI, not just manually.
+
+### What was fixed
+
+1. **Local startup made one-word and documented at the root.**
+   Root `package.json` gains `dev:backend` and `dev:app` scripts (the
+   two-process Windows workflow via the vendored Yarn), so the supported
+   startup is now `yarn dev:backend` + `yarn dev:app`. The root `README.md`
+   was rewritten from the stock Backstage boilerplate to document the real
+   workflow: prerequisites, install, two-process start, readiness endpoint,
+   verification, tests, and docs pointers. `docs/getting-started.md` updated
+   to reference the scripts, the readiness endpoint, and the self-starting
+   smoke tests.
+
+2. **Frontend readiness handling.** New `backend-status` app-root module
+   (`packages/app/src/modules/backend-status/`): an `AppRootElementBlueprint`
+   extension that polls the backend's built-in readiness endpoint
+   (`GET {backend.baseUrl}/.backstage/health/v1/readiness` — returns `503`
+   until startup completes, then `200`) every 15s and renders a full-width
+   "Backend unavailable — Catalog and Create require the backend API" banner
+   while the APIs are unreachable. The frontend is therefore never presented
+   as healthy while the required APIs are down. Uses plain `fetch` (the
+   endpoint is unauthenticated; Backstage's FetchApi adds identity/discovery
+   machinery that hangs before sign-in). Unit tests cover unavailable /
+   503 / healthy; an integration test renders the whole app with a broken
+   fetch and asserts the banner appears. Live-verified in a real browser
+   both ways: banner appears with backend down, clears on recovery.
+
+3. **Catalog/Create smoke tests now part of CI.** New `e2e` job in
+   `.github/workflows/ci.yml`: installs deps, installs Playwright browsers,
+   and runs `catalog.test.ts` + `create.test.ts` with `GITHUB_TOKEN` from
+   `secrets.GITHUB_TOKEN` (the create form's repo-availability validation
+   needs the GitHub integration configured). The Playwright `webServer`
+   config now starts the backend and frontend itself in both CI and local
+   (the same documented two-process commands), gating on the backend
+   readiness endpoint (which returns 503 until up, so the tests never race
+   a half-started backend) with generous cold-compile timeouts. Root script
+   `test:e2e:smoke` runs just the smoke tests locally.
+
+### Verification (Runtime Closure)
+
+- Control plane: `tsc` 0, `lint:all` clean, `test:all` **8 suites / 60
+  tests** (incl. 4 new banner tests), `build:all` green.
+- Playwright smoke tests (`catalog` + `create`), Playwright starting both
+  servers from clean: **3 passed in ~37s** locally, then again in CI.
+- Live browser check (frontend up, backend down): red "Backend
+  unavailable" banner rendered at the top of the app; after starting the
+  backend and the readiness endpoint returned 200, the banner cleared.
+  Backend logs confirm the banner's readiness polls
+  (`GET /.backstage/health/v1/readiness` from the frontend origin).
+- Generated apps and the scaffolder contract are untouched (no changes to
+  `templates/` or `packages/template-validation`).
+
+### Remaining blockers
+
+None for the runtime closure. The same Phase 2 documented limitations
+remain (no production deployment, Module Federation/Nx composition, or
+auth/RBAC — later phases), plus: `yarn start` (combined orchestrator)
+remains unreliable on Windows and the documented path is the two-process
+workflow; the e2e job needs `GITHUB_TOKEN` (the repo's default secret is
+used) and takes ~2–3 min for the cold dev-mode backend compile.
+
 ## Phase 2: PASS
 
-## Recommendation: READY TO MERGE
+## Recommendation: READY FOR NEXT PHASE

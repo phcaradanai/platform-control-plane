@@ -35,3 +35,33 @@ jobs:
 
       - name: Validate docker-compose
         run: docker compose config --quiet
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: node .yarn/releases/yarn-4.13.0.cjs install --immutable
+
+      - name: Install Playwright browsers
+        # Chromium is used via the default 'chrome' channel on the runner;
+        # install both so the run is not dependent on preinstalled browsers.
+        run: npx playwright install --with-deps chromium chrome
+
+      # Real end-to-end smoke tests: Playwright starts the backend (waits on
+      # the built-in readiness endpoint, which returns 503 until startup
+      # completes) and the frontend via the webServer config, then drives
+      # the guest login -> catalog -> create flow in a real browser.
+      # GITHUB_TOKEN configures the GitHub integration so the scaffolder
+      # repo-availability validation inside the create form works.
+      - name: Catalog and Create smoke tests
+        run: node .yarn/releases/yarn-4.13.0.cjs playwright test packages/app/e2e-tests/catalog.test.ts packages/app/e2e-tests/create.test.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -99,11 +99,15 @@ cycles with no failures:
 
 ```bash
 # terminal 1
-node .yarn/releases/yarn-4.13.0.cjs workspace backend start
+node .yarn/releases/yarn-4.13.0.cjs dev:backend
 
 # terminal 2
-node .yarn/releases/yarn-4.13.0.cjs workspace app start
+node .yarn/releases/yarn-4.13.0.cjs dev:app
 ```
+
+(`dev:backend` and `dev:app` are root package.json scripts that run
+`yarn workspace backend start` / `yarn workspace app start` with the
+vendored Yarn release.)
 
 Use this instead of `yarn start` on Windows. If you're on macOS/Linux and
 `yarn start` works for you, either workflow is fine.
@@ -111,9 +115,14 @@ Use this instead of `yarn start` on Windows. If you're on macOS/Linux and
 ## Verify it's running
 
 - Frontend: <http://localhost:3000> (redirects to `/catalog`)
-- Backend health: `GET http://localhost:7007/api/catalog/entities` returns
-  `401` until authenticated - that's expected. Backstage's backend APIs
-  require a bearer token even for the guest provider. To check manually:
+- Backend readiness: `GET http://localhost:7007/.backstage/health/v1/readiness`
+  returns `200` with `{"status":"ok"}` once the backend has finished
+  starting (it returns `503` while starting up). The frontend polls this
+  endpoint and shows a "Backend unavailable" banner while it is not ready,
+  so the UI never appears healthy when the catalog/scaffolder APIs are
+  unreachable.
+- Backend APIs: Backstage's backend APIs require a bearer token even for
+  the guest provider. To check manually:
 
   ```bash
   curl -s -X POST http://localhost:7007/api/auth/guest/refresh \
@@ -128,10 +137,21 @@ Use this instead of `yarn start` on Windows. If you're on macOS/Linux and
   (Domain), and `platform-mfe-app` (Template).
 - `/catalog` and `/create` rendering in the browser, including the
   Platform MFE Application template card and its full multi-step form, are
-  covered by real Playwright browser tests (Phase 1.1) - see
+  covered by real Playwright browser tests - see
   `packages/app/e2e-tests/catalog.test.ts` and `create.test.ts`. Run them
-  locally with `node .yarn/releases/yarn-4.13.0.cjs playwright test
-  packages/app/e2e-tests/` against a running backend/frontend.
+  with:
+
+  ```bash
+  node .yarn/releases/yarn-4.13.0.cjs test:e2e:smoke
+  ```
+
+  Playwright starts the backend and frontend itself (the same two-process
+  startup documented above), waits for the backend readiness endpoint, and
+  drives the guest login → catalog → create flow in a real browser. These
+  same smoke tests run in CI on every push/PR (the `e2e` job in
+  `.github/workflows/ci.yml`). If you already have a backend/frontend
+  running, `reuseExistingServer` makes Playwright use them instead of
+  starting new ones.
 
 ## Validation commands
 

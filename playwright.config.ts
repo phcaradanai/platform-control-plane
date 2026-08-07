@@ -27,23 +27,27 @@ export default defineConfig({
     timeout: 30_000,
   },
 
-  // Run your local dev server before starting the tests
-  webServer: process.env.CI
-    ? []
-    : [
-        {
-          command: 'yarn start app',
-          url: 'http://localhost:3000',
-          reuseExistingServer: true,
-          timeout: 120_000,
-        },
-        {
-          command: 'yarn start backend',
-          port: 7007,
-          reuseExistingServer: true,
-          timeout: 60_000,
-        },
-      ],
+  // Start the backend and frontend for the smoke tests. The same
+  // two-process startup that is the documented Windows workflow is used
+  // everywhere (CI and local) so the tests always run against a real,
+  // freshly-started instance. `reuseExistingServer` lets a developer with
+  // an already-running backend/frontend skip the restart.
+  webServer: [
+    {
+      command: 'node .yarn/releases/yarn-4.13.0.cjs workspace backend start',
+      url: 'http://localhost:7007/.backstage/health/v1/readiness',
+      reuseExistingServer: true,
+      // First start compiles the backend in dev mode; allow generous time
+      // on cold machines/CI before the readiness endpoint returns 200.
+      timeout: 300_000,
+    },
+    {
+      command: 'node .yarn/releases/yarn-4.13.0.cjs workspace app start',
+      url: 'http://localhost:3000',
+      reuseExistingServer: true,
+      timeout: 300_000,
+    },
+  ],
 
   forbidOnly: !!process.env.CI,
 
@@ -54,8 +58,7 @@ export default defineConfig({
   use: {
     actionTimeout: 0,
     baseURL:
-      process.env.PLAYWRIGHT_URL ??
-      (process.env.CI ? 'http://localhost:7007' : 'http://localhost:3000'),
+      process.env.PLAYWRIGHT_URL ?? 'http://localhost:3000',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },
