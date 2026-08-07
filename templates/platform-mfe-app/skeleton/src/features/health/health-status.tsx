@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/card';
 export function HealthStatus() {
   const query = useQuery({
     queryKey: ['health'],
-    queryFn: getHealth,
+    queryFn: ({ signal }) => getHealth(signal),
   });
 
   return (

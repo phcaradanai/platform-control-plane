@@ -12,15 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # No lockfile is committed by the scaffolder, so dependency caching is
-      # disabled deliberately: setup-node's cache requires a lockfile to key
-      # on and fails the job when it cannot find one.
+      # Dependency cache keys on the committed package-lock.json, so the
+      # cache is only ever restored for the exact locked tree. The Phase 1.2
+      # lesson (cache: npm failing with no lockfile) is obsolete: the
+      # lockfile is now generated into every scaffolded repository.
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          package-manager-cache: false
+          cache: npm
 
-      - run: npm install
+      # Enforce the exact npm version declared in package.json's
+      # packageManager field (reproducible package-manager behavior).
+      - run: corepack enable
+
+      # Frozen install: fails if package.json and package-lock.json drift,
+      # and installs exactly the locked tree - no floating resolution.
+      - run: npm ci
+
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

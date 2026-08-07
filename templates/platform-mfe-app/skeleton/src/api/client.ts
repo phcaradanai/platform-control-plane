@@ -44,14 +44,31 @@ async function parseErrorBody(response: Response): Promise<string> {
  * Single transport for every API call. Components and query hooks never call
  * `fetch` directly - they go through `request`, which centralizes the base
  * URL, JSON handling, timeout, and error normalization.
+ *
+ * Cancellation: pass the caller's `AbortSignal` (e.g. TanStack Query's
+ * `queryFn({ signal })`) as `options.signal`. Aborting it aborts the fetch
+ * immediately and the promise rejects with a DOMException named
+ * `AbortError` - the convention TanStack Query recognizes as a query
+ * cancellation rather than a query error. The internal timeout still works
+ * independently and surfaces as `ApiError` code `TIMEOUT`.
  */
 export async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { timeoutMs = 10_000, headers, ...rest } = options;
+  const { timeoutMs = 10_000, signal: externalSignal, headers, ...rest } = options;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  // Forward external cancellation (query unmount/refetch, user abort) to the
+  // fetch signal. The timeout and the caller share one controller, so the
+  // first abort wins.
+  const forwardAbort = () => controller.abort();
+  if (externalSignal?.aborted) {
+    controller.abort();
+  } else {
+    externalSignal?.addEventListener('abort', forwardAbort, { once: true });
+  }
 
   try {
     const response = await fetch(`${env.VITE_API_BASE_URL}${path}`, {
@@ -78,9 +95,15 @@ export async function request<T>(
 
     return (await response.json()) as T;
   } catch (error) {
+    if (externalSignal?.aborted) {
+      // Genuine cancellation by the caller - rethrow so TanStack Query
+      // treats this as a cancelled query, not a failed one.
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
     throw toApiError(error);
   } finally {
     clearTimeout(timer);
+    externalSignal?.removeEventListener('abort', forwardAbort);
   }
 }
 

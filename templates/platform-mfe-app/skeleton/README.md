@@ -48,7 +48,7 @@ A production-ready React frontend boilerplate:
 ## Running
 
 ```bash
-npm install
+npm ci             # frozen install from the committed package-lock.json
 npm run dev        # dev server on http://127.0.0.1:5173
 npm run typecheck  # tsc --noEmit (app + node configs)
 npm run lint       # eslint
@@ -60,6 +60,10 @@ npm run test:e2e   # playwright (builds + previews first)
 
 The same steps run in CI on every push and pull request to `main`
 (`.github/workflows/ci.yml`), including the Playwright browser smoke suite.
+CI installs with `npm ci` (deterministic, fails if `package.json` and
+`package-lock.json` drift) and enforces the pinned npm version via the
+`packageManager` field (`corepack enable`). When you change dependencies,
+run `npm install` locally and commit the updated `package-lock.json`.
 
 ## Environment variables
 
