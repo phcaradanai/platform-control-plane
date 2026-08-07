@@ -12,12 +12,48 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Dependency cache keys on the committed package-lock.json, so the
+      # cache is only ever restored for the exact locked tree. The Phase 1.2
+      # lesson (cache: npm failing with no lockfile) is obsolete: the
+      # lockfile is now generated into every scaffolded repository.
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          package-manager-cache: false
-      - run: npm install
+          cache: npm
+
+      # Install the exact npm version declared in package.json's
+      # packageManager field, overriding the Node-bundled npm. corepack's
+      # shim does not reliably win PATH on runners, so install explicitly.
+      - name: Install declared npm version
+        run: |
+          version="$(node -p "require('./package.json').packageManager.replace(/^npm@/, '')")"
+          npm install -g "npm@${version}"
+
+      # Fail fast if the active npm is not the declared version. This
+      # proves the install above actually took effect before any install
+      # runs - a fallback to the Node-bundled npm fails here.
+      - name: Verify npm version matches packageManager
+        run: |
+          expected="$(node -p "require('./package.json').packageManager")"
+          actual="npm@$(npm --version)"
+          echo "Declared packageManager: ${expected}"
+          echo "Active npm:              ${actual}"
+          if [ "${actual}" != "${expected}" ]; then
+            echo "::error::npm version mismatch - package.json declares ${expected} but active npm is ${actual}" >&2
+            exit 1
+          fi
+
+      # Frozen install: fails if package.json and package-lock.json drift,
+      # and installs exactly the locked tree - no floating resolution.
+      - run: npm ci
+
+      - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
+
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
       - if: ${{ failure() }}
         run: echo "Build failed for ${{ github.repository }}@${{ github.sha }}"
