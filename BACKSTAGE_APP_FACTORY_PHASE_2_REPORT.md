@@ -65,9 +65,10 @@ templates/platform-mfe-app/skeleton/
     test/setup.ts         jsdom stubs (matchMedia, ResizeObserver, ...)
   e2e/smoke.spec.ts       Playwright: boot+title, theme toggle+persist, table
                           virtualization+sort, form validation+submit, 404
-  .github/workflows/ci.yml  corepack enable -> npm ci (frozen) -> lint ->
-                          typecheck -> test -> build -> playwright -> e2e
-                          (with dependency cache; see Closure section)
+  .github/workflows/ci.yml  install declared npm -> verify npm --version ->
+                          npm ci (frozen) -> lint -> typecheck -> test ->
+                          build -> playwright -> e2e (with dependency cache;
+                          see Final-fix section)
 ```
 
 ### Library versions (researched against npm registry before deciding)
@@ -334,11 +335,12 @@ remained.
   copy via script (no re-serialization).
 - `package.json` gains `"packageManager": "npm@10.9.3"` — explicit package
   manager + version.
-- Generated CI now runs `corepack enable` (enforces the pinned npm) then
-  **`npm ci`** (frozen: fails if package.json and the lockfile drift,
-  installs exactly the locked tree), and re-enables **`cache: npm`** — safe
-  now that the lockfile exists, so cache keys never mismatch the installed
-  tree.
+- Generated CI now runs the pinned npm (initially `corepack enable`, later
+  replaced by an explicit global install + version assertion — see the
+  Final-fix section) then **`npm ci`** (frozen: fails if package.json and
+  the lockfile drift, installs exactly the locked tree), and re-enables
+  **`cache: npm`** — safe now that the lockfile exists, so cache keys never
+  mismatch the installed tree.
 - `.npmrc` with `legacy-peer-deps=true` + `fund=false`/`audit=false`.
 
 **Why `legacy-peer-deps`.** `npm ci` rejected the hoisted tree: eslint@10
@@ -427,6 +429,52 @@ The only outstanding items are the same documented limitations as Phase 2
 (no runtime backend generated, Windows dry-run quirk, capability metadata
 only) plus the disposable evidence repos.
 
-## Phase 2 Closure: PASS
+## Final fix: CI uses the exact declared npm version (proven, not assumed)
+
+The closure's CI used `corepack enable` to select the npm declared in
+`packageManager`, but nothing *proved* the active npm was the declared
+one. A real generated-repo run exposed the gap: the runner executed
+`corepack enable` yet `npm --version` reported the Node-bundled
+**npm@10.9.8**, not the declared **npm@10.9.3** — corepack's shim does
+not reliably win PATH on GitHub Actions runners.
+
+**Fix (smallest safe change, no architecture impact):** the generated
+workflow now (1) **installs** the declared npm globally
+(`npm install -g "npm@$(node -p "…packageManager")"` — the classic,
+deterministic override that wins PATH), then (2) **asserts**
+`npm --version` equals the declared `packageManager` and fails fast with
+a clear `::error::` message on mismatch, *before* `npm ci`. Lockfile,
+frozen install, tests, scaffolder behavior, and architecture are
+unchanged. Template-validation asserts both steps are present and that
+project dependencies still install via `npm ci` (never a bare floating
+`npm install` step).
+
+**Verification (real GitHub Actions runs, not simulated):**
+
+1. **Negative control** — the assertion-first version (corepack only)
+   failed on a real generated repo exactly as designed: `Declared
+   packageManager: npm@10.9.3` vs `Active npm: npm@10.9.8`, job aborted
+   at the verify step in 6s. This proves the guard catches the
+   Node-bundled fallback.
+2. **Fixed workflow, fresh scaffolder run** — task
+   `b7864f09-1279-4ef1-89c7-1a0ccebaa63b` completed; generated repo
+   `phcaradanai/platform-phase2-npmverify2` carries the workflow
+   byte-identical to the skeleton. Its GitHub Actions CI
+   (https://github.com/phcaradanai/platform-phase2-npmverify2/actions/runs/31166285692)
+   **succeeded (1m13s)**, with the step log showing:
+   `Declared packageManager: npm@10.9.3` / `Active npm: npm@10.9.3` —
+   i.e. CI provably ran the exact declared npm, then `npm ci` →
+   lint → typecheck → test → build → playwright → e2e all green.
+3. **Control plane** — PR #2 `verify` job passed on the fix commit
+   (https://github.com/phcaradanai/platform-control-plane/actions/runs/31166262779,
+   2m19s); locally tsc / lint / test (56) / build all green; template
+   validation 55 tests including the updated CI assertions.
+
+Three disposable npm-verification repos remain as evidence
+(`platform-phase2-npmverify`, `platform-phase2-npmverify2`, and the
+earlier closure repos); catalog entries were unregistered after each run
+(404 on re-query).
+
+## Phase 2: PASS
 
 ## Recommendation: READY TO MERGE
