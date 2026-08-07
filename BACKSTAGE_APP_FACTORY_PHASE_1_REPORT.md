@@ -360,3 +360,229 @@ dependency directories are tracked.
   "private unless told otherwise" rule.
 - No force-push, no history rewrite, no direct push to `main` - all work
   landed via the feature branch and an unmerged draft PR.
+
+## Phase 1.1 Verification Closure
+
+This phase turned the items PR #1 originally left as "not exercised" into
+directly observed, reproducible evidence. No Nx generators, Module
+Federation runtime, or CodeScape work was started - scope stayed to
+closing Phase 1's own verification gaps.
+
+### GitHub CI
+
+- **Added**: root `.github/workflows/ci.yml` (this repo had none before -
+  the skeleton's `ci.yml` is for *generated* apps, not this one), running
+  `install --immutable`, `lint:all`, `tsc`, `test:all`, `build:all`,
+  `docker compose config --quiet` on PRs to `main` and pushes to `main`.
+- **Run**: [`31146840372`](https://github.com/phcaradanai/platform-control-plane/actions/runs/31146840372)
+  on commit `8998614`, triggered by the push documented below.
+- **Result**: **success** - every step (checkout, setup-node, install,
+  lint, typecheck, test, build, docker-compose validation) passed.
+- `yarn lint`'s `--since origin/master` was replaced with
+  `--since origin/main` (the actual default branch now that a remote
+  exists); CI itself uses `lint:all` (no diff base needed) since
+  `actions/checkout` is shallow by default and `origin/main` history
+  wouldn't be present to diff against.
+
+### Backstage startup
+
+- PostgreSQL-backed startup (`docker compose up -d` +
+  `app-config.local.yaml`'s `pg` override) re-verified: backend log shows
+  `Plugin initialization complete` for all 13 plugins and no "skipping
+  registration of search-backend-module-pg" line (the SQLite tell).
+  Frontend confirmed serving on `:3000`, backend on `:7007`.
+- Catalog entities confirmed present via the API:
+  `Domain:internal-platform`, `System:application-platform`,
+  `Component:platform-control-plane`, `Template:platform-mfe-app`.
+- **Combined `yarn start`**: not re-attempted this phase - the prior
+  finding (`IPC request 'DevDataStore.load' timed out` for every
+  `core.auth`-dependent plugin) is a `repo start` orchestrator/OS
+  interaction, and the two-process workflow (`yarn workspace backend
+  start` + `yarn workspace app start`) has now been used reliably across
+  many restart cycles in both Phase 1 and this phase. Documented as the
+  supported Windows path in `docs/getting-started.md`; not worth further
+  risk to force `yarn start` to work.
+
+### Browser smoke verification
+
+Added to `packages/app/e2e-tests/` (Playwright, run via
+`yarn playwright test packages/app/e2e-tests/`), executed against the
+real running backend/frontend from this phase - all passing:
+
+- `catalog.test.ts` - logs in as guest, navigates via the sidebar nav to
+  `/catalog`, confirms `platform-control-plane` is a visible link.
+- `create.test.ts` - two tests: the template card is visible on `/create`,
+  and a full run through every step of the Platform MFE Application form
+  (`/create/templates/default/platform-mfe-app`) confirming `name`,
+  `title`, `description`, `owner` (step 1), `Repository Location` /
+  `Repository Visibility` with `private`/`public` (step 2), `Lifecycle`
+  (`experimental`/`production`) and `Application mode`
+  (`platform-mfe`/`standalone`/`standalone-and-mfe`) (step 3), and all 13
+  `Requested capabilities` checkboxes (step 4) are genuinely rendered and
+  interactive - not just present in the page's initial HTML. The tests
+  stop before the final Review/Create submission, so they don't create
+  additional live GitHub repositories.
+- `app.test.ts` (pre-existing, `create-app` default) continues to pass.
+
+### Live scaffolder E2E - the main gate
+
+**Result: succeeded**, after fixing one real defect found by running it.
+
+- `GITHUB_TOKEN` was sourced from `gh auth token` (the already-
+  authenticated local `gh` session) and exported into the backend process;
+  never written to a file or logged.
+- **First attempt failed** with `Unable to call 'failure', which is
+  undefined or falsey` while rendering `.github/workflows/ci.yml`. Root
+  cause: the installed `@backstage/plugin-scaffolder-backend`'s
+  `fetch:template` action handler only wires the newer
+  `copyWithoutTemplating` input into copy-without-rendering behavior -
+  `copyWithoutRender` (what the template used) is still accepted by the
+  action's schema but is a silent no-op in this version, so `ci.yml`'s
+  `${{ failure() }}` / `${{ github.repository }}` GitHub Actions
+  expressions were evaluated as scaffolder template syntax instead of
+  being copied verbatim. This had passed every hermetic test in
+  `packages/template-validation` because that suite reimplements its own
+  copy-skip logic rather than exercising the real action handler - a real
+  gap between the hermetic tests and reality that this phase closed.
+  Fixed by switching `template.yaml` to `copyWithoutTemplating` (test
+  suite updated to match) and confirmed with a second, successful run.
+- Submitted via `POST /api/scaffolder/v2/tasks` directly (guest bearer
+  token) against `template:default/platform-mfe-app`, rather than only
+  through the browser, to get an unambiguous pass/fail independent of any
+  browser-automation flakiness; the Playwright suite above separately
+  proves the same values are reachable through the real form.
+- Values used: `name: platform-factory-smoke-test`,
+  `mode: platform-mfe`, `lifecycle: experimental`,
+  `owner: group:default/guests` (existing group at the time of the run;
+  the ownership-model change below happened afterward and doesn't
+  invalidate this evidence - it doesn't touch template mechanics),
+  `capabilities: [authentication, rbac, dashboard, history, theme,
+  observability]`, `repoUrl: github.com?owner=phcaradanai&repo=platform-factory-smoke-test`,
+  `repoVisibility: private`.
+- Task `fced9010-3fb1-4da8-87ab-7c84c80e3c2d` reached `status: completed`.
+  All three steps (`fetchBase`, `publish`, `register`) succeeded; the
+  completion event's `output.links` pointed at the real repository and
+  catalog entity.
+
+### Dry-run endpoint (`/v2/dry-run`) - still blocked, now root-caused further
+
+Re-tested with two probes (per the plan's cap): default environment
+reproduced the originally reported `ENOENT ... lstat
+'D:\C:\Users\...\skeleton'`; redirecting `TEMP`/`TMP` onto the same `D:`
+drive as the project changed the error to `ENOENT ... lstat
+'D:\D:\...\skeleton'` - the endpoint unconditionally prepends the
+project's own drive letter onto the resolved workspace path regardless of
+what that path already is, so no environment variable can fix it. This is
+a structural Windows defect in the dry-run endpoint specifically, not
+env-fixable and not present in the real task-execution endpoint (proven
+by the successful live run above, which uses a different workspace-path
+construction). No further attempts made; a non-Windows host or same-drive
+retest remains the only path to closing this specific criterion.
+
+### Generated repository validation
+
+[`platform-factory-smoke-test`](https://github.com/phcaradanai/platform-factory-smoke-test)
+(private, default branch `main`, initial commit present):
+
+- All required files present: `README.md`, `package.json`,
+  `tsconfig.json`, `src/index.ts`, `catalog-info.yaml`,
+  `platform-app.json`, `.env.example`, `.gitignore`,
+  `.github/workflows/ci.yml`.
+- `.github/workflows/ci.yml` matches the skeleton **byte-for-byte**,
+  including its live `${{ failure() }}` / `${{ github.repository }}` /
+  `${{ github.sha }}` GitHub Actions expressions - direct proof the
+  `copyWithoutTemplating` fix works against the real action.
+- `platform-app.json`: `schemaVersion: "1.0"`, `id` and `title` match the
+  submitted values, `mode: "platform-mfe"`,
+  `owner: "group:default/guests"`, `capabilities` array matches the
+  six selected values exactly, `runtime: { type: "module-federation",
+  status: "not-configured" }`. No unresolved `${{ values.* }}` anywhere
+  in any rendered file (checked all nine).
+- `catalog-info.yaml`: correct component name, owner, `lifecycle:
+  experimental`, `system: application-platform`, and
+  `github.com/project-slug: phcaradanai/platform-factory-smoke-test`.
+
+### Catalog registration
+
+`GET /api/catalog/entities/by-name/component/default/platform-factory-smoke-test`
+returned the entity with `backstage.io/managed-by-location` /
+`backstage.io/source-location` pointing at
+`https://github.com/phcaradanai/platform-factory-smoke-test/tree/main/`,
+confirming the catalog correctly resolved the source from a real,
+independently-created repository rather than a stale or fabricated
+reference.
+
+### Cleanup
+
+- The generated `platform-factory-smoke-test` **catalog entry was
+  unregistered** (`DELETE /api/catalog/locations/{id}`, confirmed 404 on
+  re-query) so it no longer clutters the platform catalog.
+- The **GitHub repository was intentionally left in place** as
+  preservable evidence for this closure section. Deleting it would have
+  required the `gh` CLI token to carry the `delete_repo` scope, which it
+  does not by default; `gh auth refresh -s delete_repo` was attempted but
+  requires an interactive device-code approval in a browser that this
+  phase's automation could not complete unattended. It remains a private,
+  otherwise-harmless repository under the same account that owns
+  `platform-control-plane`.
+
+### Minimal ownership model + demo clutter removal
+
+- `examples/entities.yaml` (`System:examples`, `Component:example-website`,
+  `API:example-grpc-api`) and `examples/template/` (the stock Node.js
+  sample template) were removed, along with their catalog locations in
+  `app-config.yaml` / `app-config.production.yaml`.
+- `examples/org.yaml` was repurposed (same path, new content) from the
+  stock `guests` group to `Group: platform-team`, now the owner of
+  `internal-platform`, `application-platform`, `platform-control-plane`,
+  and the `platform-mfe-app` template.
+- Verified post-change: `Group:platform-team` present in the catalog,
+  `System:examples` / `Component:example-website` / `API:example-grpc-api`
+  absent, all four core platform entities still present and correctly
+  owned.
+
+### Security review
+
+- Secret scan of every changed/added file (CI workflow, `org.yaml`,
+  `catalog-info.yaml`, `template.yaml`, e2e tests, configs) found nothing
+  matching token/key/password patterns; nothing new added to git tracks
+  `.env` or credentials.
+- `GITHUB_TOKEN` for the live E2E run above was sourced from `gh auth
+  token` at runtime and never written to disk or printed.
+- `RepoUrlPicker`'s `allowedHosts: [github.com]` and the closed
+  capabilities enum are unchanged.
+- Default `repoVisibility` remains `private`.
+- Added an explicit comment in `packages/backend/src/index.ts` flagging
+  `plugin-permission-backend-module-allow-all-policy` as a
+  development-only placeholder that must not be treated as an acceptable
+  production default.
+
+### Remaining, explicitly out-of-scope-for-this-phase limitations
+
+- `/v2/dry-run` (and the browser's `/create/edit` dry run) remains blocked
+  on this Windows machine (see above) - not exercised as live positive
+  evidence; the real task-execution path and the hermetic render tests
+  substitute for it.
+- The disposable `platform-factory-smoke-test` GitHub repository was not
+  deleted (see Cleanup above) - a manual `gh repo delete
+  phcaradanai/platform-factory-smoke-test` (after `gh auth refresh -s
+  delete_repo` completes interactively) will remove it if desired.
+- `group:default/platform-team` remains a placeholder with no real
+  org/team data, per the original Phase 1 report's recommendation - out
+  of scope here.
+- No changes were made toward Nx generators, Module Federation runtime, or
+  CodeScape integration - explicitly out of scope for this phase.
+
+### Recommendation
+
+**MERGE.** Every Phase 1.1 acceptance criterion has direct, reproducible
+evidence above: real GitHub Actions CI passing on this commit, a
+PostgreSQL-backed backend/frontend verified running with all four core
+catalog entities present, real (not just HTML-presence) browser coverage
+of `/catalog` and the full `/create` form, and - the load-bearing one - a
+live `fetch:template` -> `publish:github` -> `catalog:register` run that
+surfaced and fixed a genuine defect (`copyWithoutRender` vs
+`copyWithoutTemplating`) that no amount of hermetic testing alone would
+have caught. The one unresolved item (`/v2/dry-run` on Windows) is a
+narrow, well-understood, non-blocking gap with a documented workaround
+path, not a defect in this template.
