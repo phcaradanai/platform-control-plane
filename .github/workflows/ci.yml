@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: node .yarn/releases/yarn-4.13.0.cjs install --immutable
+
+      - name: Lint
+        run: node .yarn/releases/yarn-4.13.0.cjs lint:all
+
+      - name: Typecheck
+        run: node .yarn/releases/yarn-4.13.0.cjs tsc
+
+      - name: Test
+        run: node .yarn/releases/yarn-4.13.0.cjs test:all
+
+      - name: Build
+        run: node .yarn/releases/yarn-4.13.0.cjs build:all
+
+      - name: Validate docker-compose
+        run: docker compose config --quiet

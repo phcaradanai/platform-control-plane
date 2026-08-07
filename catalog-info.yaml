@@ -8,7 +8,7 @@ metadata:
     Internal developer platform capabilities: the Backstage control plane,
     software templates, and the catalog of applications it produces.
 spec:
-  owner: group:default/guests
+  owner: group:default/platform-team
 ---
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-system
 apiVersion: backstage.io/v1alpha1
@@ -19,7 +19,7 @@ metadata:
     The App Factory system: Backstage acting as control plane for creating,
     registering, and cataloging Platform MFE applications.
 spec:
-  owner: group:default/guests
+  owner: group:default/platform-team
   domain: internal-platform
 ---
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
@@ -36,5 +36,5 @@ metadata:
 spec:
   type: website
   lifecycle: experimental
-  owner: group:default/guests
+  owner: group:default/platform-team
   system: application-platform

@@ -76,10 +76,10 @@ node .yarn/releases/yarn-4.13.0.cjs start
 This runs `backstage-cli repo start`, which starts the frontend
 (`http://localhost:3000`) and backend (`http://localhost:7007`) together.
 
-### Known limitation: combined `yarn start` failed in this environment
+### Supported Windows workflow: two-process startup
 
-When this app was verified on Windows, running the combined `yarn start`
-(`backstage-cli repo start`) produced a backend startup failure:
+On Windows, the combined `yarn start` (`backstage-cli repo start`) has
+been observed to fail with:
 
 ```
 Error: IPC request 'DevDataStore.load' with ID 8 timed out
@@ -88,12 +88,14 @@ Error: IPC request 'DevDataStore.load' with ID 8 timed out
 for every plugin that depends on `core.auth` in dev mode (`kubernetes`,
 `user-settings`, `notifications`, `signals`, `mcp-actions`). This is the
 `repo start` orchestrator's IPC channel between the parent CLI process and
-its forked backend child failing to establish - a dev-harness issue, not
-an application defect. It was **not** re-tested after switching away from
-it, so no root cause (shell, OS, antivirus, etc.) is confirmed.
+its forked backend child failing to establish - a dev-harness/OS
+interaction, not an application defect; the root cause (shell, OS,
+antivirus, etc.) was not isolated further since a fully reliable
+alternative exists.
 
-The workaround that was verified to work is running the two packages
-independently instead of through the combined orchestrator:
+**The supported Windows development path is the two-process workflow**,
+re-verified in Phase 1.1 across multiple full backend/frontend restart
+cycles with no failures:
 
 ```bash
 # terminal 1
@@ -103,8 +105,8 @@ node .yarn/releases/yarn-4.13.0.cjs workspace backend start
 node .yarn/releases/yarn-4.13.0.cjs workspace app start
 ```
 
-If `yarn start` hangs or fails with a similar IPC timeout, use the
-two-terminal workaround above.
+Use this instead of `yarn start` on Windows. If you're on macOS/Linux and
+`yarn start` works for you, either workflow is fine.
 
 ## Verify it's running
 
@@ -123,21 +125,27 @@ two-terminal workaround above.
 
 - The catalog entities API (above) returns `platform-control-plane`
   (Component), `application-platform` (System), `internal-platform`
-  (Domain), and `platform-mfe-app` (Template) - confirmed in this
-  environment. Whether `/catalog` and `/create` render them correctly in
-  the browser was not independently re-verified after the config changes
-  in this phase (see the Phase 1 report); the frontend route `/create`
-  does return an HTTP 200 page shell.
+  (Domain), and `platform-mfe-app` (Template).
+- `/catalog` and `/create` rendering in the browser, including the
+  Platform MFE Application template card and its full multi-step form, are
+  covered by real Playwright browser tests (Phase 1.1) - see
+  `packages/app/e2e-tests/catalog.test.ts` and `create.test.ts`. Run them
+  locally with `node .yarn/releases/yarn-4.13.0.cjs playwright test
+  packages/app/e2e-tests/` against a running backend/frontend.
 
 ## Validation commands
 
 ```bash
-node .yarn/releases/yarn-4.13.0.cjs lint:all     # yarn lint uses --since origin/master, which fails with no remote
+node .yarn/releases/yarn-4.13.0.cjs lint:all     # yarn lint uses --since origin/main, which needs full history; use lint:all in CI/shallow checkouts
 node .yarn/releases/yarn-4.13.0.cjs tsc
 node .yarn/releases/yarn-4.13.0.cjs test:all
 node .yarn/releases/yarn-4.13.0.cjs build:all
 docker compose config --quiet                     # validates docker-compose.yml
 ```
+
+These same commands run automatically in GitHub Actions CI on every pull
+request to `main` and every push to `main` - see
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 ## Creating an application
 
@@ -159,8 +167,11 @@ See [app-template.md](./app-template.md) for what gets generated and
 - GitHub OAuth sign-in is wired but inert until `AUTH_GITHUB_CLIENT_ID` /
   `AUTH_GITHUB_CLIENT_SECRET` are configured; local development uses the
   guest provider by default.
-- The template's `publish:github` step was validated up to the point where
-  it requires a real `GITHUB_TOKEN`; the live repository-creation call
-  itself was not exercised in this environment because no token was
-  available (see the Phase 1 report for what was and wasn't verified
-  end-to-end).
+- The full `fetch:template` -> `publish:github` -> `catalog:register` chain,
+  including a real `GITHUB_TOKEN` and a live GitHub repository creation,
+  has been exercised end-to-end (Phase 1.1) - see
+  `BACKSTAGE_APP_FACTORY_PHASE_1_REPORT.md`'s "Phase 1.1 Verification
+  Closure" section for the run details.
+- `permission-backend-module-allow-all-policy` is a development-only
+  placeholder (see the comment in `packages/backend/src/index.ts`) and
+  must be replaced with a real policy before any production use.

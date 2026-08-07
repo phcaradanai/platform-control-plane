@@ -80,6 +80,31 @@ to your deployment's config and remove the `guest: {}` provider from
 `app-config.production.yaml`'s `auth.providers` once real identities are
 available.
 
+## Phase 1.1: how the live scaffolder test was run
+
+The full `fetch:template` -> `publish:github` -> `catalog:register` chain
+was exercised end-to-end against real GitHub credentials:
+
+1. `GITHUB_TOKEN` was sourced from the local `gh` CLI's own authenticated
+   session (`gh auth token`) rather than a separately issued PAT, and
+   exported into the shell that started `yarn workspace backend start` -
+   it was never written to a file or printed.
+2. A scaffolder task was submitted directly against the backend's
+   `POST /api/scaffolder/v2/tasks` API (guest bearer token) with
+   `templateRef: template:default/platform-mfe-app` and real form values,
+   to get deterministic pass/fail evidence independent of browser
+   automation flakiness. The Playwright suite (`create.test.ts`) separately
+   covers that the same values are reachable through the actual UI form.
+3. The task's event log and final status were polled via
+   `GET /api/scaffolder/v2/tasks/{id}` /
+   `GET /api/scaffolder/v2/tasks/{id}/events` until `completed`.
+4. Results (created repository, catalog registration) were independently
+   verified via `gh repo view` / `gh api` and the catalog entities API, not
+   just trusted from the task's own success status.
+
+See `BACKSTAGE_APP_FACTORY_PHASE_1_REPORT.md`'s "Phase 1.1 Verification
+Closure" section for the specific run and its outcome.
+
 ## Security constraints honored
 
 - No token, client secret, or private key is ever committed - only

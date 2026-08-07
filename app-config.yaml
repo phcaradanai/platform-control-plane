@@ -105,17 +105,9 @@ catalog:
   rules:
     - allow: [Component, System, API, Resource, Location, Domain]
   locations:
-    # Local example data, file locations are relative to the backend process, typically `packages/backend`
-    - type: file
-      target: ../../examples/entities.yaml
-
-    # Local example template
-    - type: file
-      target: ../../examples/template/template.yaml
-      rules:
-        - allow: [Template]
-
-    # Local example organizational data
+    # Minimal development ownership data (Group: platform-team). File
+    # locations are relative to the backend process, typically
+    # `packages/backend`. See docs/catalog-model.md.
     - type: file
       target: ../../examples/org.yaml
       rules:

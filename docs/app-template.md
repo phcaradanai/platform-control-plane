@@ -42,12 +42,26 @@ register   -> catalog:register   register catalog-info.yaml in the new repo
 All three are Backstage built-in actions; no custom scaffolder action was
 implemented, per the spec's preference for built-ins.
 
-`fetchBase` passes `copyWithoutRender: ['.github/workflows/**']`. Without
-this, the skeleton's `.github/workflows/ci.yml` would be run through the
-same `${{ ... }}` template engine Backstage uses for scaffolder
-expressions, which is the same delimiter GitHub Actions expressions use -
-`${{ steps... }}` in the workflow file would be evaluated against the
-scaffolder's (empty) context and silently stripped out.
+`fetchBase` passes `copyWithoutTemplating: ['.github/workflows/**']`.
+Without this, the skeleton's `.github/workflows/ci.yml` would be run
+through the same `${{ ... }}` template engine Backstage uses for
+scaffolder expressions, which is the same delimiter GitHub Actions
+expressions use - `${{ failure() }}` / `${{ github.repository }}` in the
+workflow file would be evaluated against the scaffolder's context and
+fail the render (`Unable to call 'failure', which is undefined or
+falsey`) instead of being copied verbatim.
+
+**Phase 1.1 finding:** the installed
+`@backstage/plugin-scaffolder-backend` version's `fetch:template` action
+handler only wires the *newer* `copyWithoutTemplating` input into the
+copy-without-rendering behavior - `copyWithoutRender` is still accepted by
+the action's schema (so no validation error) but is silently a no-op. The
+template originally used `copyWithoutRender`, which passed every hermetic
+test in `packages/template-validation` (that test suite reimplements its
+own copy-skip logic rather than exercising the real handler) but failed
+the first real scaffolder task run against this backend version. Fixed by
+switching to `copyWithoutTemplating`; the test suite's helper and
+assertions were renamed to match.
 
 ## What gets generated
 
@@ -106,16 +120,24 @@ with nunjucks configured exactly as Backstage's `SecureTemplater` does
 - `catalog-info.yaml` parses as YAML with the expected name/owner/
   lifecycle/system
 - `.github/workflows/ci.yml` is copied byte-for-byte, proving
-  `copyWithoutRender` is doing its job
+  `copyWithoutTemplating` is doing its job
 
-Live verification via the backend's `/api/scaffolder/v2/dry-run` endpoint
-(and, equivalently, the `/create/edit` browser dry run, which calls the
-same endpoint) was attempted but is blocked in this environment by a
-Windows-specific path-joining defect: the endpoint's temp workspace path
-and the project's OS temp directory ended up on different drive letters,
-producing `ENOENT ... lstat 'D:\C:\Users\...\skeleton'`. This is a
-Backstage/OS interaction, not a defect in this template - the hermetic
-render tests above exercise the same nunjucks rendering path without
-depending on that endpoint. See the Phase 1 report for the full detail
-and for the exact point at which live GitHub publishing verification
-stopped due to the absence of a `GITHUB_TOKEN`.
+## Live end-to-end verification (Phase 1.1)
+
+The `/api/scaffolder/v2/dry-run` endpoint (and, equivalently, the
+`/create/edit` browser dry run, which calls the same endpoint) remains
+blocked on Windows by a path-joining defect: it always prepends the
+project's own drive letter onto the resolved temp workspace path, even
+when that path is already absolute - producing `ENOENT ... lstat
+'D:\C:\Users\...\skeleton'` or, with `TMP`/`TEMP` redirected onto the same
+drive, `ENOENT ... lstat 'D:\D:\...\skeleton'`. This was re-confirmed in
+Phase 1.1 and is a Backstage/OS interaction, not a defect in this
+template; there is no known workaround short of a non-Windows host.
+
+That gap no longer blocks end-to-end confidence: the **real** task
+execution endpoint (`POST /api/scaffolder/v2/tasks`, the same one the
+`/create` UI's "Create" button calls) does not share the dry-run
+endpoint's workspace-path construction and was exercised successfully,
+including a live `publish:github` repository creation and
+`catalog:register`. See `BACKSTAGE_APP_FACTORY_PHASE_1_REPORT.md`'s
+"Phase 1.1 Verification Closure" section for the run.

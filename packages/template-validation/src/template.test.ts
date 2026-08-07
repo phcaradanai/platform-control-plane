@@ -27,7 +27,7 @@ const SAMPLE_VALUES = {
   name: 'sample-app',
   title: 'Sample App',
   description: 'A sample application generated for tests.',
-  owner: 'group:default/guests',
+  owner: 'group:default/platform-team',
   mode: 'platform-mfe',
   lifecycle: 'experimental',
   capabilities: SELECTED_CAPABILITIES,
@@ -127,7 +127,7 @@ describe('platform-mfe-app template.yaml', () => {
     const fetchStep = template.spec.steps.find(
       (s: { id: string }) => s.id === 'fetchBase',
     );
-    expect(fetchStep.input.copyWithoutRender).toContain(
+    expect(fetchStep.input.copyWithoutTemplating).toContain(
       '.github/workflows/**',
     );
   });
@@ -171,18 +171,18 @@ describe('platform-mfe-app skeleton', () => {
     const rendered = renderSkeleton(
       skeletonDir,
       SAMPLE_VALUES,
-      fetchStep.input.copyWithoutRender,
+      fetchStep.input.copyWithoutTemplating,
     );
 
     it('leaves no unresolved scaffolder expressions in any rendered file', () => {
-      const copyWithoutRenderPrefixes = (
-        fetchStep.input.copyWithoutRender as string[]
+      const copyWithoutTemplatingPrefixes = (
+        fetchStep.input.copyWithoutTemplating as string[]
       ).map((p: string) => p.replace(/\*\*?$/, ''));
       for (const [file, content] of rendered) {
         // Files copied verbatim (e.g. GitHub Actions workflows) legitimately
         // keep their own `${{ ... }}` expressions - those aren't scaffolder
         // expressions and are covered by the byte-identical check below.
-        if (copyWithoutRenderPrefixes.some(prefix => file.startsWith(prefix))) {
+        if (copyWithoutTemplatingPrefixes.some(prefix => file.startsWith(prefix))) {
           continue;
         }
         expect({ file, hasUnresolved: content.includes('${{') }).toEqual({
@@ -226,7 +226,7 @@ describe('platform-mfe-app skeleton', () => {
       );
     });
 
-    it('leaves the GitHub Actions workflow byte-identical (copyWithoutRender)', () => {
+    it('leaves the GitHub Actions workflow byte-identical (copyWithoutTemplating)', () => {
       const source = fs.readFileSync(
         path.join(skeletonDir, '.github/workflows/ci.yml'),
         'utf8',

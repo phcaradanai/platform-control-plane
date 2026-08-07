@@ -11,7 +11,7 @@ metadata:
     in a later phase - this template only produces the application
     foundation and records requested capabilities.
 spec:
-  owner: group:default/guests
+  owner: group:default/platform-team
   type: service
 
   parameters:
@@ -128,15 +128,17 @@ spec:
 
   steps:
     # Renders the controlled skeleton into the working directory. Workflow
-    # files are copied verbatim (copyWithoutRender) because their
+    # files are copied verbatim (copyWithoutTemplating) because their
     # `${{ ... }}` GitHub Actions expressions would otherwise be evaluated
-    # as scaffolder template syntax and stripped out.
+    # as scaffolder template syntax and stripped out. copyWithoutRender is
+    # the older, now-inert key on this @backstage/plugin-scaffolder-backend
+    # version - the fetch:template handler only reads copyWithoutTemplating.
     - id: fetchBase
       name: Fetch Skeleton
       action: fetch:template
       input:
         url: ./skeleton
-        copyWithoutRender:
+        copyWithoutTemplating:
           - .github/workflows/**
         values:
           name: ${{ parameters.name }}

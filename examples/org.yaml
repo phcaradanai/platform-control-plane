@@ -5,13 +5,17 @@ kind: User
 metadata:
   name: guest
 spec:
-  memberOf: [guests]
+  memberOf: [platform-team]
 ---
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-group
 apiVersion: backstage.io/v1alpha1
 kind: Group
 metadata:
-  name: guests
+  name: platform-team
+  description: >-
+    Minimal development ownership placeholder for the App Factory's own
+    catalog entities and the Platform MFE Application template. Not backed
+    by real org/team data yet - see docs/catalog-model.md.
 spec:
   type: team
   children: []

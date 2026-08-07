@@ -6,13 +6,16 @@ import nunjucks from 'nunjucks';
  * Reproduces how the built-in `fetch:template` scaffolder action renders
  * skeleton file contents: nunjucks with the `${{ ... }}` delimiters
  * Backstage's SecureTemplater configures (autoescape off, same tag markers).
- * Files matching `copyWithoutRenderPrefixes` are copied verbatim, mirroring
- * the template's `copyWithoutRender` step input.
+ * Files matching `copyWithoutTemplatingPrefixes` are copied verbatim,
+ * mirroring the template's `copyWithoutTemplating` step input (the key the
+ * real fetch:template action handler reads - `copyWithoutRender` is an
+ * older, now-inert key that the handler's schema still accepts but never
+ * wires into behavior).
  */
 export function renderSkeleton(
   skeletonDir: string,
   values: Record<string, unknown>,
-  copyWithoutRenderPrefixes: string[] = [],
+  copyWithoutTemplatingPrefixes: string[] = [],
 ): Map<string, string> {
   const env = new nunjucks.Environment(null, {
     autoescape: false,
@@ -37,7 +40,7 @@ export function renderSkeleton(
         .split(path.sep)
         .join('/');
       const source = fs.readFileSync(abs, 'utf8');
-      const skipRender = copyWithoutRenderPrefixes.some(pattern => {
+      const skipRender = copyWithoutTemplatingPrefixes.some(pattern => {
         const prefix = pattern.replace(/\*\*?$/, '');
         return relPath.startsWith(prefix);
       });

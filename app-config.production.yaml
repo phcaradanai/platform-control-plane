@@ -40,18 +40,10 @@ catalog:
   rules:
     - allow: [Component, System, API, Resource, Location, Domain]
   locations:
-    # Local example data, replace this with your production config, these are intended for demo use only.
-    # File locations are relative to the backend process, typically in a deployed context, such as in a Docker container, this will be the root
-    - type: file
-      target: ./examples/entities.yaml
-
-    # Local example template
-    - type: file
-      target: ./examples/template/template.yaml
-      rules:
-        - allow: [Template]
-
-    # Local example organizational data
+    # Minimal development ownership data (Group: platform-team). Replace
+    # with real org/team data before real production use - see
+    # docs/catalog-model.md. File locations are relative to the backend
+    # process; in a deployed context (e.g. Docker container) this is the root.
     - type: file
       target: ./examples/org.yaml
       rules:
