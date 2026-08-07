@@ -12,12 +12,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # No lockfile is committed by the scaffolder, so dependency caching is
+      # disabled deliberately: setup-node's cache requires a lockfile to key
+      # on and fails the job when it cannot find one.
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           package-manager-cache: false
+
       - run: npm install
+      - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
+
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
       - if: ${{ failure() }}
         run: echo "Build failed for ${{ github.repository }}@${{ github.sha }}"

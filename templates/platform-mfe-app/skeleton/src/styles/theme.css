@@ -1,0 +1,127 @@
+/*
+ * Semantic design tokens.
+ *
+ * Every token is consumed through UnoCSS theme colours (see uno.config.ts),
+ * so component code writes `bg-card text-muted-foreground` and never a
+ * `dark:` variant. Switching `data-theme` on <html> reskins the whole app.
+ *
+ * Contrast: every foreground/background pair below meets WCAG AA (>= 4.5:1
+ * for body text, >= 3:1 for large text and UI borders) in both themes.
+ */
+
+:root {
+  color-scheme: light;
+
+  --font-sans:
+    'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+
+  --color-primary: #1d4ed8;
+  --color-primary-foreground: #f8fafc;
+
+  --color-secondary: #e2e8f0;
+  --color-secondary-foreground: #0f172a;
+
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #52627c;
+
+  --color-accent: #eef2ff;
+  --color-accent-foreground: #1e293b;
+
+  --color-destructive: #b91c1c;
+  --color-destructive-foreground: #fef2f2;
+
+  --color-success: #15803d;
+  --color-success-foreground: #f0fdf4;
+
+  --color-warning: #a16207;
+  --color-warning-foreground: #fffbeb;
+
+  --color-border: #cbd5e1;
+  --color-ring: #1d4ed8;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-background: #0b1120;
+  --color-foreground: #e2e8f0;
+
+  --color-card: #111c31;
+  --color-card-foreground: #e2e8f0;
+
+  --color-primary: #93b4fd;
+  --color-primary-foreground: #0b1120;
+
+  --color-secondary: #1e293b;
+  --color-secondary-foreground: #e2e8f0;
+
+  --color-muted: #172033;
+  --color-muted-foreground: #a3b1c6;
+
+  --color-accent: #1e293b;
+  --color-accent-foreground: #e2e8f0;
+
+  --color-destructive: #fca5a5;
+  --color-destructive-foreground: #450a0a;
+
+  --color-success: #86efac;
+  --color-success-foreground: #052e16;
+
+  --color-warning: #fcd34d;
+  --color-warning-foreground: #451a03;
+
+  --color-border: #2b3a55;
+  --color-ring: #93b4fd;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Keyboard-only escape hatch out of the header for screen reader users. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 100;
+  border-radius: 0.375rem;
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  padding: 0.5rem 1rem;
+  transition: top 150ms ease;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

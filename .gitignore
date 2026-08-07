@@ -40,6 +40,9 @@ build/
 # oh-my-claudecode local session state (not part of app source)
 .omc/
 
+# Hermes agent local state (task briefs, scripts, session files)
+.hermes/
+
 # Temporary change files created by Vim
 *.swp
 
