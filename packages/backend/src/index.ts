@@ -28,6 +28,11 @@ backend.add(import('@backstage/plugin-auth-backend'));
 // See https://backstage.io/docs/backend-system/building-backends/migrating#the-auth-plugin
 backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
 // See https://backstage.io/docs/auth/guest/provider
+// Registering this module is a no-op until `auth.providers.github` is
+// configured (see app-config.local.yaml.example and
+// docs/github-integration.md) - it does not require AUTH_GITHUB_CLIENT_ID
+// / AUTH_GITHUB_CLIENT_SECRET to be set for local development to boot.
+backend.add(import('@backstage/plugin-auth-backend-module-github-provider'));
 
 // catalog plugin
 backend.add(import('@backstage/plugin-catalog-backend'));
@@ -40,6 +45,10 @@ backend.add(import('@backstage/plugin-catalog-backend-module-logs'));
 
 // permission plugin
 backend.add(import('@backstage/plugin-permission-backend'));
+// DEVELOPMENT-ONLY: allows every action for every identity. This is a
+// placeholder ahead of real identities/groups (see catalog-model.md) and
+// must be replaced with a real policy gating scaffolder template
+// execution before any production use - it is not a safe default.
 // See https://backstage.io/docs/permissions/getting-started for how to create your own permission policy
 backend.add(
   import('@backstage/plugin-permission-backend-module-allow-all-policy'),

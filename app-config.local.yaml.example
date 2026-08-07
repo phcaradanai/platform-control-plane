@@ -1,0 +1,40 @@
+# Copy to app-config.local.yaml to point local development at the
+# docker-compose PostgreSQL instance instead of the default in-memory
+# SQLite database. app-config.local.yaml is gitignored (see .gitignore,
+# `*.local.yaml`) and is merged on top of app-config.yaml automatically
+# by the Backstage CLI - no --config flag needed.
+#
+# Requires POSTGRES_* variables exported in your shell (see .env.example
+# and docs/getting-started.md).
+
+backend:
+  database:
+    client: pg
+    connection:
+      host: ${POSTGRES_HOST}
+      port: ${POSTGRES_PORT}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+      database: ${POSTGRES_DB}
+
+# Optional: enable GitHub sign-in locally instead of the guest provider.
+# Requires AUTH_GITHUB_CLIENT_ID / AUTH_GITHUB_CLIENT_SECRET exported in
+# your shell (see .env.example and docs/github-integration.md) and a
+# GitHub OAuth app with callback URL
+# http://localhost:7007/api/auth/github/handler/frame.
+# The @backstage/plugin-auth-backend-module-github-provider module is
+# already registered in packages/backend/src/index.ts and stays inert
+# as long as this block is absent, so local development never depends on
+# it. clientId/clientSecret are REQUIRED by the module's config schema the
+# moment this block is present - uncomment only once both env vars are
+# set, or the backend will fail to start.
+# auth:
+#   providers:
+#     github:
+#       development:
+#         clientId: ${AUTH_GITHUB_CLIENT_ID}
+#         clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+#         signIn:
+#           resolvers:
+#             - resolver: usernameMatchingUserEntityName
+#               dangerouslyAllowSignInWithoutUserInCatalog: true

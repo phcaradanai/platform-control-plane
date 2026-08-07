@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "id": "${{ values.name }}",
+  "title": "${{ values.title }}",
+  "mode": "${{ values.mode }}",
+  "owner": "${{ values.owner }}",
+  "capabilities": ${{ values.capabilities | dump }},
+  "runtime": {
+    "type": "module-federation",
+    "status": "not-configured"
+  }
+}

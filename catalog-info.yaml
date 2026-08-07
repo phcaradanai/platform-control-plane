@@ -1,13 +1,40 @@
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-domain
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: internal-platform
+  description: >-
+    Internal developer platform capabilities: the Backstage control plane,
+    software templates, and the catalog of applications it produces.
+spec:
+  owner: group:default/platform-team
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-system
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: application-platform
+  description: >-
+    The App Factory system: Backstage acting as control plane for creating,
+    registering, and cataloging Platform MFE applications.
+spec:
+  owner: group:default/platform-team
+  domain: internal-platform
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: platform-control-plane
-  description: An example of a Backstage application.
-  # Example for optional annotations
+  description: >-
+    The Backstage instance that serves as the App Factory control plane:
+    catalog, software templates, and GitHub-backed application scaffolding.
   # annotations:
-  #   github.com/project-slug: backstage/backstage
+  #   github.com/project-slug: <org>/platform-control-plane
   #   backstage.io/techdocs-ref: dir:.
 spec:
   type: website
-  owner: john@example.com
   lifecycle: experimental
+  owner: group:default/platform-team
+  system: application-platform

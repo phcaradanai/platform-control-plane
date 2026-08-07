@@ -1,0 +1,13 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.name }}
+  title: ${{ values.title }}
+  description: ${{ values.description }}
+  annotations:
+    github.com/project-slug: ${{ values.repo.owner }}/${{ values.repo.repo }}
+spec:
+  type: website
+  lifecycle: ${{ values.lifecycle }}
+  owner: ${{ values.owner }}
+  system: application-platform

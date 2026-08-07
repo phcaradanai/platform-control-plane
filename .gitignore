@@ -28,11 +28,17 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.local
+.env.*.local
 .env.test
 
 # Build output
 dist
 dist-types
+build/
+
+# oh-my-claudecode local session state (not part of app source)
+.omc/
 
 # Temporary change files created by Vim
 *.swp
