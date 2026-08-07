@@ -586,3 +586,83 @@ surfaced and fixed a genuine defect (`copyWithoutRender` vs
 have caught. The one unresolved item (`/v2/dry-run` on Windows) is a
 narrow, well-understood, non-blocking gap with a documented workaround
 path, not a defect in this template.
+
+## Phase 1.2: generated-repository CI green verification
+
+Phase 1.1 verified that the scaffolder produces a repository with the
+*correct files* (byte-identical `ci.yml`, correct `platform-app.json`,
+correct `catalog-info.yaml`) but never checked whether GitHub Actions
+actually **runs successfully** inside that generated repository. That
+was a real gap, not a formality: the workflow file being copied
+correctly says nothing about whether it passes once GitHub executes it
+against a freshly generated project with no lockfile.
+
+### What was found
+
+A fresh live scaffolder run (`platform-factory-smoke-test-2`, task
+`bfb9ea93-9480-45ac-b098-b163c30081c3`) completed successfully - repo
+created, files present, catalog registered - exactly as in Phase 1.1.
+But its GitHub Actions run
+(https://github.com/phcaradanai/platform-factory-smoke-test-2/actions/runs/31148105305)
+**failed**:
+
+```
+X Run actions/setup-node@v4
+Dependencies lock file is not found in .../platform-factory-smoke-test-2.
+Supported file patterns: package-lock.json, npm-shrinkwrap.json, yarn.lock
+```
+
+Root cause: the skeleton's `ci.yml` used `actions/setup-node@v4` with
+`cache: npm`, which requires a committed lockfile to key its cache on.
+The skeleton only ships `package.json` - no `npm install` is run during
+scaffolding, so no lockfile is ever generated or committed. Every
+application produced by this template would have had a red "CI" badge
+on first push, before any real code was even written.
+
+### Fix
+
+Removed `cache: npm` from
+`templates/platform-mfe-app/skeleton/.github/workflows/ci.yml` (commit
+`739c07b`). `copyWithoutTemplating` still applies to the whole file, so
+this is copied byte-for-byte like before -
+`template-validation`'s byte-identical assertion (46/46 tests,
+`CI=true yarn workspace template-validation test`) was re-run and still
+passes because it diffs against the skeleton source directly, not a
+hardcoded expectation.
+
+### Re-verification
+
+- Pushed `739c07b` to `feat/backstage-app-factory-phase-1`; control-plane
+  CI run
+  https://github.com/phcaradanai/platform-control-plane/actions/runs/31148778890
+  passed (lint, typecheck, test, build, docker-compose config all green).
+- Ran a second fresh live scaffolder task
+  (`platform-factory-smoke-test-3`, task
+  `ab10b3e8-3d18-4c65-8df6-0af0654fa352`) against the fixed template -
+  repo created, catalog registered, and its GitHub Actions run
+  https://github.com/phcaradanai/platform-factory-smoke-test-3/actions/runs/31148809025
+  **succeeded** (`build` job green in 13s: checkout, setup-node, npm
+  install, typecheck, build all passed).
+- This closes the loop the spec asked for: not just "the generated repo
+  has the right files" but "the generated repo's own CI is green."
+
+### Cleanup (Phase 1.2 additions)
+
+- Both `platform-factory-smoke-test-2` and `platform-factory-smoke-test-3`
+  catalog entries were unregistered (`DELETE
+  /api/catalog/entities/by-uid/{uid}`, `204` for both).
+- Both GitHub repositories were preserved as evidence, same reasoning as
+  Phase 1.1: the token still lacks `delete_repo` scope (`gh auth status`
+  reconfirmed `gist, read:org, repo, workflow` only - no interactive
+  device-code approval available in this session). They, along with
+  `platform-factory-smoke-test` from Phase 1.1, are the disposable
+  evidence repos left under `phcaradanai/` pending manual deletion.
+
+### Updated recommendation
+
+**MERGE.** The generated-CI gap identified in this pass is now fixed and
+independently re-verified end-to-end (new live scaffolder run -> new
+repo -> its own Actions run green), not just asserted. Combined with
+Phase 1.1's closure, both the control-plane's own CI and every
+application it generates are now confirmed green on real GitHub Actions
+runs, not just locally.
