@@ -245,6 +245,11 @@ describe('platform-mfe-app skeleton', () => {
     expect(ci).toContain('corepack enable');
     expect(ci).toContain('npm ci');
     expect(ci).not.toContain('npm install');
+    // The active npm must be proven to match the declared packageManager
+    // version before any install runs (guards against Node-bundled npm).
+    expect(ci).toContain('Verify npm version matches packageManager');
+    expect(ci).toContain('npm --version');
+    expect(ci).toContain("require('./package.json').packageManager");
   });
 
   describe('rendered output', () => {

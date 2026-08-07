@@ -25,6 +25,21 @@ jobs:
       # packageManager field (reproducible package-manager behavior).
       - run: corepack enable
 
+      # Fail fast if the active npm is not the declared version. corepack
+      # shims npm, but the assertion makes the guarantee explicit instead of
+      # trusting PATH ordering - a fallback to the Node-bundled npm fails
+      # here, before any install happens.
+      - name: Verify npm version matches packageManager
+        run: |
+          expected="$(node -p "require('./package.json').packageManager")"
+          actual="npm@$(npm --version)"
+          echo "Declared packageManager: ${expected}"
+          echo "Active npm:              ${actual}"
+          if [ "${actual}" != "${expected}" ]; then
+            echo "::error::npm version mismatch - package.json declares ${expected} but active npm is ${actual}" >&2
+            exit 1
+          fi
+
       # Frozen install: fails if package.json and package-lock.json drift,
       # and installs exactly the locked tree - no floating resolution.
       - run: npm ci
