@@ -1,19 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 
-import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
+import { Button } from '@platform/ui';
+import { Card } from '@platform/ui';
+import { Input } from '@platform/ui';
+import { Label } from '@platform/ui';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select';
-import { Switch } from '../../components/ui/switch';
-import { useToast } from '../../components/ui/toast';
+} from '@platform/ui';
+import { Switch } from '@platform/ui';
+import { useToast } from '@platform/ui';
 import { demoFormSchema } from './schema';
 import type { DemoFormValues } from './schema';
 

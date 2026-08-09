@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
-import { QueryBoundary } from './query-boundary';
+import { QueryBoundary } from '@platform/ui';
 
 function renderBoundary(query: Parameters<typeof QueryBoundary>[0]['query']) {
   const client = new QueryClient({

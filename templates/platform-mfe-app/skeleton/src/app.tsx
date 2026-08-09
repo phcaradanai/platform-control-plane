@@ -3,8 +3,8 @@ import { RouterProvider } from '@tanstack/react-router';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 
-import { ThemeProvider } from './components/theme/theme-provider';
-import { ToastProvider } from './components/ui/toast';
+import { ThemeProvider } from '@platform/ui';
+import { ToastProvider } from '@platform/ui';
 import { router } from './router';
 
 const queryClient = new QueryClient({

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 
-import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+import { Card } from '@platform/ui';
+import { Badge } from '@platform/ui';
 import { HealthStatus } from '../features/health/health-status';
 import { appInfo } from '../lib/app-info';
 

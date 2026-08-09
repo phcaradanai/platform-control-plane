@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { ThemeProvider, useTheme } from './theme-provider';
+import { ThemeProvider, useTheme } from '@platform/ui';
 
 function Probe() {
   const { preference, theme, setPreference } = useTheme();

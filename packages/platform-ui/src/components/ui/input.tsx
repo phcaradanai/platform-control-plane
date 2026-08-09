@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import type { InputHTMLAttributes } from 'react';
 
-import { cn } from '../../lib/cn';
+import { cn } from '../../lib/cn.js';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;

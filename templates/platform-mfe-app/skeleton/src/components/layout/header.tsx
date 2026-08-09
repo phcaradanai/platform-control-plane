@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 
 import { appInfo } from '../../lib/app-info';
-import { ThemeToggle } from '../theme/theme-toggle';
+import { ThemeToggle } from '@platform/ui';
 
 export function Header() {
   return (
@@ -15,6 +15,7 @@ export function Header() {
         </Link>
         <nav aria-label="Main" className="flex items-center gap-1">
           <NavLink to="/" label="Home" />
+          <NavLink to="/components" label="Components" />
           <NavLink to="/table" label="Table" />
           <NavLink to="/form" label="Form" />
           <div className="ml-2">
@@ -26,7 +27,7 @@ export function Header() {
   );
 }
 
-function NavLink({ to, label }: { to: '/' | '/table' | '/form'; label: string }) {
+function NavLink({ to, label }: { to: '/' | '/components' | '/table' | '/form'; label: string }) {
   return (
     <Link
       to={to}

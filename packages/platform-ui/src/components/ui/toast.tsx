@@ -2,7 +2,7 @@ import * as ToastPrimitive from '@radix-ui/react-toast';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
-import { cn } from '../../lib/cn';
+import { cn } from '../../lib/cn.js';
 
 type ToastVariant = 'default' | 'success' | 'destructive';
 

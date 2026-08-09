@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-import { EmptyState } from './empty-state';
-import { ErrorState } from './error-state';
-import { LoadingState } from './loading-state';
+import { EmptyState } from './empty-state.js';
+import { ErrorState } from './error-state.js';
+import { LoadingState } from './loading-state.js';
 
 export interface QueryBoundaryProps<T> {
   query: UseQueryResult<T>;

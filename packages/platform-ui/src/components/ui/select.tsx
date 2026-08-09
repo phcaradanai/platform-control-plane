@@ -3,7 +3,7 @@ import { Check, ChevronDown } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ComponentPropsWithoutRef, ElementRef } from 'react';
 
-import { cn } from '../../lib/cn';
+import { cn } from '../../lib/cn.js';
 
 export const Select = SelectPrimitive.Root;
 export const SelectValue = SelectPrimitive.Value;
