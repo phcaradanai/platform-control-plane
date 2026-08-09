@@ -24,15 +24,33 @@ const githubProvider = {
  * governs `auth.providers.guest` (present locally, `null`-deleted in
  * production - see docs/identity-and-access.md), so the sign-in page never
  * offers a Guest button that the backend would reject.
+ *
+ * In production, GitHub is always configured (required for anyone to sign
+ * in at all - see app-config.production.yaml), so the button is shown
+ * unconditionally there. In local development, GitHub is optional (see
+ * app-config.local.yaml.example) and `auth.providers.github` can't be
+ * probed directly from the frontend to see whether it's set - see
+ * config.d.ts's `auth.localGithubEnabled` doc comment for why. So local
+ * development additionally requires that companion flag before showing
+ * the button, which keeps the default `yarn start` (nothing configured)
+ * from offering a GitHub button that would fail with "No auth provider
+ * registered for 'github'" the moment it's clicked.
  */
 export function PlatformSignInPageContent(props: SignInPageProps) {
   const configApi = useApi(configApiRef);
   const isDevelopment =
     configApi.getOptionalString('auth.environment') === 'development';
+  const localGithubEnabled =
+    configApi.getOptionalBoolean('auth.localGithubEnabled') ?? false;
 
-  const providers: IdentityProviders = isDevelopment
-    ? ['guest', githubProvider]
-    : [githubProvider];
+  let providers: IdentityProviders;
+  if (!isDevelopment) {
+    providers = [githubProvider];
+  } else if (localGithubEnabled) {
+    providers = ['guest', githubProvider];
+  } else {
+    providers = ['guest'];
+  }
 
   return <SignInPage {...props} providers={providers} />;
 }

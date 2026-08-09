@@ -28,7 +28,14 @@ backend:
 # it. clientId/clientSecret are REQUIRED by the module's config schema the
 # moment this block is present - uncomment only once both env vars are
 # set, or the backend will fail to start.
+#
+# Uncomment BOTH `auth.localGithubEnabled` and the `auth.providers.github`
+# block together - the sign-in page (packages/app/src/modules/sign-in/)
+# only shows the GitHub button locally when `localGithubEnabled` is true,
+# so that a default `yarn start` (this whole file absent) never offers a
+# button that would fail with "No auth provider registered for 'github'".
 # auth:
+#   localGithubEnabled: true
 #   providers:
 #     github:
 #       development:

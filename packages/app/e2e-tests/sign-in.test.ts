@@ -17,16 +17,22 @@
 import { test, expect } from '@playwright/test';
 
 // Local development runs with `auth.environment: development` (see
-// app-config.yaml), which packages/app/src/modules/sign-in/SignInPage.tsx
-// reads to offer both Guest and GitHub. This is the real dev server + a
-// real browser, not a mocked component render - it proves the GitHub
-// sign-in option is actually reachable from the sign-in page UI, not only
-// configured in the backend. Production's GitHub-only, no-Guest behavior
-// is covered hermetically in packages/template-validation (merged config
-// has no guest provider at all) since exercising it live needs a deployed
-// Postgres + real GitHub OAuth app, which this phase's tooling doesn't
-// provide yet (see docs/getting-started.md).
-test('Sign-in page offers both GitHub and Guest in local development', async ({
+// app-config.yaml) and, on a default checkout, no app-config.local.yaml -
+// so GitHub is not configured on the backend. This is the real dev server
+// + a real browser, not a mocked component render - it proves the sign-in
+// page never offers a GitHub button that would fail with "No auth
+// provider registered for 'github'" the moment it's clicked (the bug this
+// phase fixes), while Guest sign-in stays available. GitHub becoming
+// reachable once `auth.localGithubEnabled` + the provider block are
+// uncommented in app-config.local.yaml.example is covered by
+// packages/app/src/modules/sign-in/SignInPage.test.tsx (component-level,
+// since it needs real OAuth credentials this environment doesn't have).
+// Production's GitHub-only, no-Guest behavior is covered hermetically in
+// packages/template-validation (merged config has no guest provider at
+// all) since exercising it live needs a deployed Postgres + real GitHub
+// OAuth app, which this phase's tooling doesn't provide yet (see
+// docs/getting-started.md).
+test('Sign-in page offers Guest only on a default local checkout - no broken GitHub button', async ({
   page,
 }) => {
   await page.goto('/');
@@ -34,6 +40,8 @@ test('Sign-in page offers both GitHub and Guest in local development', async ({
   await expect(page.getByText('Guest', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Enter' })).toBeVisible();
 
-  await expect(page.getByText('GitHub', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible();
+  await expect(page.getByText('GitHub', { exact: true })).not.toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Sign In' }),
+  ).not.toBeVisible();
 });

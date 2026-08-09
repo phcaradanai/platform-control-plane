@@ -186,11 +186,17 @@ See [app-template.md](./app-template.md) for what gets generated and
   the project prompt's "Out of Scope" section).
 - GitHub OAuth sign-in is wired but inert until `AUTH_GITHUB_CLIENT_ID` /
   `AUTH_GITHUB_CLIENT_SECRET` are configured; local development uses the
-  guest provider by default. It's the real, required sign-in path in
-  production (`app-config.production.yaml` disables guest entirely) - see
-  [identity-and-access.md](./identity-and-access.md). A real GitHub OAuth
-  app + a real browser consent flow have been exercised end to end
-  (Phase 3.1 closure), including the catalog gate rejecting an
+  guest provider by default, and the sign-in page shows Guest only until
+  you opt in. To opt in, uncomment **both** the `auth.providers.github`
+  block **and** `auth.localGithubEnabled: true` together in
+  `app-config.local.yaml.example` - uncommenting only one leaves either a
+  configured provider with no button, or a button with nothing behind it
+  (see [identity-and-access.md](./identity-and-access.md)'s "Sign-in page
+  (frontend)" section for why both are needed). It's the real, required
+  sign-in path in production (`app-config.production.yaml` disables guest
+  entirely) - see [identity-and-access.md](./identity-and-access.md). A
+  real GitHub OAuth app + a real browser consent flow have been exercised
+  end to end (Phase 3.1 closure), including the catalog gate rejecting an
   unprovisioned account and accepting a provisioned one.
 - If the dev backend stays on readiness `503` with `better-sqlite3 ...
   NODE_MODULE_VERSION ... Please try re-compiling` in the log, the native

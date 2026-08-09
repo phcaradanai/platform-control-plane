@@ -14,7 +14,10 @@ below.
 - **Local development** (`app-config.yaml`): the guest provider stays on,
   unchanged from earlier phases - `auth.providers.guest: {}`. There is no
   real identity to sign in with locally unless you opt in to GitHub OAuth
-  (see `app-config.local.yaml.example`).
+  by uncommenting **both** the `auth.providers.github` block **and**
+  `auth.localGithubEnabled: true` in `app-config.local.yaml.example`
+  (copied to `app-config.local.yaml`, gitignored) - see "Sign-in page
+  (frontend)" below for why both are required.
 - **Production** (`app-config.production.yaml`): guest sign-in is
   disabled - `auth.providers.guest: null` deletes the base config's guest
   provider from the merged config rather than leaving it as an empty
@@ -47,10 +50,39 @@ with one that reads `auth.environment` - a frontend-visible config key
 owned by `@backstage/plugin-auth-backend` itself (`visibility: frontend`
 in its schema) - and offers:
 
-- `development` (`app-config.yaml`): Guest **and** GitHub.
+- `development` (`app-config.yaml`): Guest, always; GitHub only if
+  `auth.localGithubEnabled: true` is also set (see below).
 - anything else, including unset (`app-config.production.yaml` sets it to
-  `production`): GitHub only - no Guest button is rendered, matching the
-  backend having no guest provider to answer it.
+  `production`): GitHub only, unconditionally (production requires GitHub
+  to be configured for anyone to sign in at all) - no Guest button is
+  rendered, matching the backend having no guest provider to answer it.
+
+**Why local development needs a second flag, not just
+`auth.providers.github`:** the naive fix - showing GitHub whenever
+`auth.environment === 'development'` - was the actual bug: on a default
+`yarn start` with no `app-config.local.yaml`, GitHub isn't registered on
+the backend at all, so that button led to "No auth provider registered
+for 'github'". The frontend can't fix this by checking whether
+`auth.providers.github.development` is *present* either -
+`@backstage/plugin-auth-backend-module-github-provider`'s config schema
+marks the whole `auth.providers.github` node `visibility: frontend`, but
+its per-environment keys (`development`/`production`) are matched via
+JSON Schema `additionalProperties`, and this Backstage version's
+frontend-visibility filtering does not propagate through that: even with
+a real `clientId` set, `backstage-cli config:print --frontend` (and
+`schema.process(..., { visibility: ['frontend'] })`, the same call the
+CLI makes under the hood) show `auth.providers.github: {}`. Confirmed
+empirically before writing the fix; regression-tested in
+`packages/template-validation/src/signInFrontendConfig.test.ts`.
+
+So `packages/app/config.d.ts` declares a small, dedicated,
+`visibility: frontend` flag - `auth.localGithubEnabled` - outside
+`auth.providers.github` entirely (so it isn't subject to the same
+`additionalProperties` limitation), and `app-config.local.yaml.example`
+sets it alongside the real provider block. Uncommenting only one of the
+two leaves either a backend-registered provider with no button (harmless)
+or a button with nothing behind it (the original bug) - both blocks must
+be uncommented together.
 
 Platform Admin / Developer are **not** separate login buttons - they stay
 post-login roles derived from `PlatformAccessPolicy`
@@ -210,28 +242,37 @@ Hermetic (CI):
   `development`).
 - `packages/app/src/modules/sign-in/SignInPage.test.tsx` - renders the
   actual sign-in page component (via `renderInTestApp`, so real Router +
-  API wiring, not a shallow render) under each `auth.environment` value
-  and asserts the Guest button/card is present only for `development`,
-  while GitHub is present in every case.
+  API wiring, not a shallow render) across the real matrix: development
+  with `auth.localGithubEnabled` unset (Guest only - the default local
+  checkout and the state that used to be the bug), development with it
+  set to `true` (Guest **and** GitHub), production (GitHub only, no
+  Guest, regardless of the local-only flag), and unset `auth.environment`
+  (treated as non-development).
+- `packages/template-validation/src/signInFrontendConfig.test.ts` -
+  exercises the real config-schema-collection + visibility-filtering
+  pipeline (`loadConfigSchema().process(..., { visibility: ['frontend']
+  })`, the same call `backstage-cli config:print --frontend` makes) to
+  pin the empirical gap described above: `auth.providers.github.*` is
+  always stripped to `{}` for the frontend, while
+  `auth.localGithubEnabled` survives and defaults to absent. If a future
+  Backstage upgrade changes either behavior, this test catches it before
+  a live click-through would.
 - `packages/app/e2e-tests/sign-in.test.ts` - real dev server, real
   browser (Playwright, part of `yarn test:e2e:smoke` and the CI `e2e`
-  job): loads `/` and asserts both the Guest and GitHub sign-in options
-  are visible, proving GitHub sign-in is reachable from the UI, not only
-  configured in the backend. Production's GitHub-only behavior is **not**
-  exercised in a real browser - the provider list is decided entirely by
-  frontend config (`auth.environment`), so a live check would only need a
-  second frontend process on another port with
+  job): loads `/` on a default checkout (no `app-config.local.yaml`) and
+  asserts Guest is visible while GitHub is **not** - pinning the actual
+  bug fix, not just that a button exists. GitHub becoming visible and
+  usable once the local overlay is uncommented needs real OAuth
+  credentials this environment doesn't have, so that state is covered at
+  the component level (`SignInPage.test.tsx`) instead. Production's
+  GitHub-only behavior is **not** exercised in a real browser - the
+  provider list is decided entirely by frontend config, so a live check
+  would only need a second frontend process on another port with
   `auth.environment: production`, not a deployed PostgreSQL/GitHub OAuth
   app; that second server just hasn't been added yet. Today it's covered
   hermetically only: `SignInPage.test.tsx` renders the real component
   under `auth.environment: production` and asserts no Guest button, and
   the config tests above assert the production file itself sets it.
-
-Known gap: local development's GitHub button is visible even without the
-`app-config.local.yaml.example` opt-in overlay (see "Sign-in" above) -
-clicking it in that state hits an unconfigured provider and fails. This
-matches the "local development **may** offer GitHub" scope (not "must
-work out of the box") but is worth knowing before you click it.
 
 Live (Phase 3.1 closure run, real backend + real GitHub):
 
