@@ -62,12 +62,23 @@ a no-op until `auth.providers.github` exists in config, so local
 development is never blocked by missing OAuth credentials - it falls back
 to the guest provider.
 
-To enable it locally:
+To enable it:
 
-1. Create a GitHub OAuth App at
-   <https://github.com/settings/developers> with callback URL
-   `http://localhost:7007/api/auth/github/handler/frame`.
-2. Export `AUTH_GITHUB_CLIENT_ID` and `AUTH_GITHUB_CLIENT_SECRET`.
+1. Create a GitHub App (or classic OAuth App) with callback URL
+   `http://localhost:7007/api/auth/github/handler/frame`. GitHub no
+   longer offers a REST endpoint to create apps, so this is a browser
+   step: either the [manifest
+   flow](https://docs.github.com/en/apps/creating-github-apps/creating-github-apps-from-a-manifest)
+   (`https://github.com/settings/apps/new?state=...&manifest=<url-encoded JSON>`,
+   one click on the pre-filled form) or the regular settings page
+   (<https://github.com/settings/developers> for OAuth Apps,
+   <https://github.com/settings/apps/new> for GitHub Apps). After
+   creation, generate a client secret on the app's settings page - it is
+   shown only once.
+2. Export `AUTH_GITHUB_CLIENT_ID` and `AUTH_GITHUB_CLIENT_SECRET` (both
+   are wired up in `.env.example`; a gitignored
+   `github-app-platform-control-plane-credentials.yaml` keeps the pair
+   together locally).
 3. Copy `app-config.local.yaml.example` to `app-config.local.yaml` (it
    already includes the `auth.providers.github` block, commented out) and
    uncomment the `auth:` block. Leave it commented out if you're only

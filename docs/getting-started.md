@@ -188,11 +188,19 @@ See [app-template.md](./app-template.md) for what gets generated and
   `AUTH_GITHUB_CLIENT_SECRET` are configured; local development uses the
   guest provider by default. It's the real, required sign-in path in
   production (`app-config.production.yaml` disables guest entirely) - see
-  [identity-and-access.md](./identity-and-access.md). Full browser OAuth
-  consent has not been exercised end-to-end (no registered OAuth app in
-  this environment); what's verified is that the backend boots cleanly
-  with the provider configured and that the config-level sign-in gate is
-  in place.
+  [identity-and-access.md](./identity-and-access.md). A real GitHub OAuth
+  app + a real browser consent flow have been exercised end to end
+  (Phase 3.1 closure), including the catalog gate rejecting an
+  unprovisioned account and accepting a provisioned one.
+- If the dev backend stays on readiness `503` with `better-sqlite3 ...
+  NODE_MODULE_VERSION ... Please try re-compiling` in the log, the native
+  module was built for a different Node ABI than the backend runs under
+  (this happens when `yarn install` runs under a newer Node than the one
+  the backend re-execs to - the repo's engines are `22 || 24`). Fix by
+  rebuilding with the runtime Node, e.g.
+  `PATH="$(dirname "$(which node)")" npm rebuild better-sqlite3` or a
+  targeted `node-gyp rebuild` under the Node version the backend actually
+  uses.
 - The full `fetch:template` -> `publish:github` -> `catalog:register` chain,
   including a real `GITHUB_TOKEN` and a live GitHub repository creation,
   has been exercised end-to-end (Phase 1.1) - see

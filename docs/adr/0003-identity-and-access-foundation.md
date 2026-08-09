@@ -80,6 +80,12 @@ deliberate decision, not something this ADR presupposes.
   nobody is an admin until a `User` entity opts in. This follows the same
   "clearly marked placeholder, not real org data" pattern
   `docs/catalog-model.md` already documents for `platform-team`.
+- Phase 3.1 closure adds a clean provisioning path for real identities:
+  `scripts/provision-identities.mjs` renders `examples/org.provisioned.yaml`
+  (validated, lowercase-login entity names, known-groups only), which
+  `app-config.production.yaml` imports instead of the dev
+  `examples/org.yaml` - so the `guest` fixture never exists in the
+  production catalog. See `docs/identity-and-access.md`.
 - This is entirely separate from `@platform/sdk`'s `useAuth()` /
   `usePermissions()` contract for generated apps (see
   `docs/identity-and-access.md`'s "Not the same identity as generated
