@@ -104,6 +104,12 @@ requested, which parts are placeholders, how to run validation
 (`npm install && npm run typecheck && npm run build`), and that runtime
 integration is a later phase.
 
+The generated app also vendors two shared packages as tarballs under
+`vendor/` (`@platform/ui` for UI primitives, `@platform/sdk` for the
+platform-facing identity/auth/permissions/tenant/navigation/runtime
+contracts - see [platform-sdk.md](./platform-sdk.md)), copied byte-exact
+via `copyWithoutTemplating: ['vendor/**']` rather than templated.
+
 ## Automated validation
 
 `packages/template-validation` (run via `yarn test`) renders the skeleton

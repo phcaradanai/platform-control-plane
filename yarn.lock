@@ -7819,6 +7819,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@platform/sdk@workspace:packages/platform-sdk":
+  version: 0.0.0-use.local
+  resolution: "@platform/sdk@workspace:packages/platform-sdk"
+  dependencies:
+    "@types/node": "npm:^22"
+    "@types/react": "npm:^19.2.18"
+    react: "npm:^19.2.8"
+    typescript: "npm:^5.9.2"
+  peerDependencies:
+    react: ^19.2.8
+  languageName: unknown
+  linkType: soft
+
 "@platform/ui@workspace:packages/platform-ui":
   version: 0.0.0-use.local
   resolution: "@platform/ui@workspace:packages/platform-ui"

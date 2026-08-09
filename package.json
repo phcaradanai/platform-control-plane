@@ -18,7 +18,7 @@
     "test:e2e": "playwright test",
     "fix": "backstage-cli repo fix",
     "lint": "backstage-cli repo lint --since origin/main",
-    "lint:all": "backstage-cli repo lint && yarn workspace @platform/ui lint",
+    "lint:all": "backstage-cli repo lint && yarn workspace @platform/ui lint && yarn workspace @platform/sdk lint",
     "prettier:check": "prettier --check .",
     "new": "backstage-cli new",
     "dev:app": "node .yarn/releases/yarn-4.13.0.cjs workspace app start",

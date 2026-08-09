@@ -1,5 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 
+import {
+  useAuth,
+  useNavigation,
+  usePermissions,
+  usePlatformApp,
+  usePlatformRuntime,
+  useTenant,
+} from '@platform/sdk';
 import { Card } from '@platform/ui';
 import { Badge } from '@platform/ui';
 import { HealthStatus } from '../features/health/health-status';
@@ -54,6 +62,8 @@ function HomePage() {
         <HealthStatus />
       </section>
 
+      <PlatformCapabilities />
+
       <nav aria-label="Demos" className="flex flex-wrap gap-3">
         <Link
           to="/table"
@@ -69,5 +79,72 @@ function HomePage() {
         </Link>
       </nav>
     </div>
+  );
+}
+
+/**
+ * Demonstrates the @platform/sdk contracts this app was generated with:
+ * identity/runtime are always available, while auth/permissions/tenant
+ * report "unavailable" until a real provider is wired up for them (there is
+ * none yet in standalone mode - see docs/platform-sdk.md in the control
+ * plane repo for the full contract).
+ */
+function PlatformCapabilities() {
+  const app = usePlatformApp();
+  const { runtimeMode } = usePlatformRuntime();
+  const { currentPath } = useNavigation();
+  const auth = useAuth();
+  const permissions = usePermissions();
+  const tenant = useTenant();
+
+  return (
+    <Card className="p-6">
+      <h2 className="text-lg font-medium">Platform capabilities</h2>
+      <dl className="mt-4 space-y-3 text-sm">
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">App ID (via usePlatformApp)</dt>
+          <dd className="font-mono">{app.id}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">Runtime mode</dt>
+          <dd className="font-mono">{runtimeMode}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">Current path (via useNavigation)</dt>
+          <dd className="font-mono">{currentPath}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">Auth</dt>
+          <dd>
+            <Badge variant={auth.status === 'ready' ? 'default' : 'outline'}>
+              {auth.status === 'ready'
+                ? auth.isAuthenticated
+                  ? 'authenticated'
+                  : 'unauthenticated'
+                : 'unavailable'}
+            </Badge>
+          </dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">Permissions</dt>
+          <dd>
+            <Badge variant={permissions.status === 'ready' ? 'default' : 'outline'}>
+              {permissions.status}
+            </Badge>
+          </dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">Tenant</dt>
+          <dd>
+            <Badge variant={tenant.status === 'ready' ? 'default' : 'outline'}>
+              {tenant.status === 'ready' ? tenant.tenantName : 'unavailable'}
+            </Badge>
+          </dd>
+        </div>
+      </dl>
+      {auth.status === 'unavailable' ? (
+        <p className="mt-4 text-sm text-muted-foreground">{auth.reason}</p>
+      ) : null}
+    </Card>
   );
 }
