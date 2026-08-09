@@ -36,4 +36,16 @@ export {
   createStandaloneNavigationAdapter,
 } from './adapters/standalone.js';
 
-export { PlatformCapabilityUnavailableError } from './errors.js';
+export {
+  PlatformCapabilityUnavailableError,
+  PlatformRuntimeUnavailableError,
+} from './errors.js';
+
+export {
+  detectPlatformHost,
+  PLATFORM_HOST_GLOBAL,
+} from './runtime/host-contract.js';
+export type { PlatformHostContext } from './runtime/host-contract.js';
+
+export { resolvePlatformRuntime } from './runtime/resolve.js';
+export type { ResolvedPlatformRuntime } from './runtime/resolve.js';

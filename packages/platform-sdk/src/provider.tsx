@@ -13,7 +13,11 @@ import type { PlatformAppIdentity, RuntimeMode } from './types.js';
 export interface PlatformProviderConfig {
   /** The application's identity, read from its generated `platform-app.json`. */
   app: PlatformAppIdentity;
-  /** Defaults to "standalone" - only a platform-hosted shell would pass "hosted". */
+  /**
+   * Defaults to "standalone". Generated apps should pass the `runtimeMode`
+   * produced by `resolvePlatformRuntime` rather than setting this directly -
+   * see `runtime/resolve.ts`.
+   */
   runtimeMode?: RuntimeMode;
   /**
    * Override any capability's default adapter. Omitted capabilities fall back

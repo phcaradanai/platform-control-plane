@@ -44,6 +44,11 @@ export function App() {
 }
 ```
 
+The generated skeleton's actual `App` additionally passes `runtimeMode`
+and `adapters` from `resolveAppRuntime()` (`src/lib/platform-runtime.ts`)
+rather than leaving them at their standalone defaults - see "Standalone
+vs. hosted" below for why.
+
 Then, anywhere beneath it:
 
 ```tsx
@@ -98,14 +103,73 @@ its own null-checking convention.
 
 ## Standalone vs. hosted
 
-`usePlatformRuntime().runtimeMode` is `'standalone'` today - the only mode
-that exists, since there is no platform-hosted shell yet. It is a
+`usePlatformRuntime().runtimeMode` (`'standalone'` or `'hosted'`) is a
 distinct concept from `platform-app.json`'s own `mode` field (the
 scaffold-time choice of `platform-mfe` / `standalone` /
 `standalone-and-mfe`): `runtimeMode` is *where the code is currently
-executing*, `platform-app.json`'s `mode` is *what the app was configured
-for*. A future platform-hosted shell would set `runtimeMode: 'hosted'` and
-supply real adapters; nothing in this phase implements that shell.
+executing*, `mode` is *what the app was configured for*. Phase 5 connects
+the two with `resolvePlatformRuntime(mode, host)`
+(`packages/platform-sdk/src/runtime/resolve.ts`), called once at boot by
+the generated app's `main.tsx`:
+
+| `mode` | No platform host detected | Platform host detected |
+| --- | --- | --- |
+| `standalone` | `runtimeMode: 'standalone'` | `runtimeMode: 'standalone'` (host ignored) |
+| `platform-mfe` | throws `PlatformRuntimeUnavailableError` | `runtimeMode: 'hosted'`, uses host adapters |
+| `standalone-and-mfe` | `runtimeMode: 'standalone'` | `runtimeMode: 'hosted'`, uses host adapters |
+
+`standalone` never uses a host even if one is present - otherwise it
+would be behaviorally identical to `standalone-and-mfe`. `platform-mfe`
+requires one: `main.tsx` catches `PlatformRuntimeUnavailableError` and
+renders a plain, dependency-free fallback
+(`src/components/feedback/runtime-unavailable.tsx`) instead of mounting a
+broken app - this is what "fail clearly and safely" means in practice. See
+[ADR 0005](./adr/0005-runtime-mode-boundary.md) for the full design and
+`docs/adr/0002-platform-sdk-contracts.md` for why this whole area of the
+SDK exists.
+
+### The host contract
+
+A platform host (real or, today, only a test harness - no Super App shell
+exists yet) publishes a `PlatformHostContext` at
+`window.__PLATFORM_HOST__` (`PLATFORM_HOST_GLOBAL` in
+`packages/platform-sdk/src/runtime/host-contract.ts`) before the
+generated app's own bundle runs:
+
+```ts
+interface PlatformHostContext {
+  contractVersion: 1;
+  adapters?: Partial<PlatformAdapters>;
+}
+```
+
+`detectPlatformHost()` reads and validates it, returning `null` for both
+"nothing there" and "present but an unrecognized `contractVersion`" -
+callers can't tell the two apart, and don't need to. This global is
+deliberately the *entire* boundary: nothing in the SDK or the generated
+app assumes Backstage, webpack, or Module Federation put it there, so a
+later Super App runtime, a plain `<script>` tag, or an iframe bridge can
+all satisfy it identically.
+
+Any adapter the host's context omits keeps its standalone default -
+exactly like `PlatformProvider`'s own `adapters` override today, just
+sourced from the host instead of the app.
+
+### Testing hosted behavior without a host
+
+`@platform/sdk/testing` (a separate subpath, not exported from the
+package's main entry point) provides `installMockPlatformHost()` for unit
+tests - it writes directly to `globalThis`, so it only works when the test
+and the "page" share a JS realm (e.g. a Vitest/jsdom test). For
+Playwright/browser-automation tests, where the test runs in Node and the
+page is a separate realm, construct the host object inside a
+`page.addInitScript()` body instead, keyed by the same
+`"__PLATFORM_HOST__"` string - see the generated skeleton's
+`e2e/runtime-mode.spec.ts`. Either way, `getSnapshot()` on any adapter you
+supply must return a stable (`Object.is`-equal) reference until something
+actually changes, same as the standalone navigation adapter below -
+returning a fresh object every call causes an infinite `useSyncExternalStore`
+render loop, not just a wasted render.
 
 ## Adapters: the extension point
 

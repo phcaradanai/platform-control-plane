@@ -3,6 +3,27 @@ import { expect, test } from '@playwright/test';
 // The scaffolded app renders the generated title in index.html, so this
 // assertion verifies the whole render chain, not just a hardcoded string.
 const APP_TITLE = '${{ values.title }}';
+// Explicitly typed `string` - see e2e/runtime-mode.spec.ts for why an
+// inferred literal type here would make comparisons against other modes a
+// TS2367 compile error in apps generated with a different mode.
+const APP_MODE: string = '${{ values.mode }}';
+
+// "platform-mfe" mode requires a platform host to boot at all (see
+// src/lib/platform-runtime.ts) - without one it renders the
+// RuntimeUnavailable fallback screen instead of the app below. Inject a
+// minimal mock host so this shared smoke suite exercises the real app UI
+// for every mode, not the fallback. The mode boundary itself (fallback
+// screen, host detection, adapter wiring) is covered in
+// e2e/runtime-mode.spec.ts.
+test.beforeEach(async ({ page }) => {
+  if (APP_MODE === 'platform-mfe') {
+    await page.addInitScript(() => {
+      (window as unknown as Record<string, unknown>).__PLATFORM_HOST__ = {
+        contractVersion: 1,
+      };
+    });
+  }
+});
 
 test('app boots and shows the generated title', async ({ page }) => {
   await page.goto('/');

@@ -1,8 +1,9 @@
 /**
  * Where this app is currently executing. Distinct from `PlatformAppIdentity.mode`
  * (a scaffold-time choice recorded in `platform-app.json`, e.g. "platform-mfe"):
- * `runtimeMode` is the live environment, only ever "standalone" until a
- * platform-hosted shell exists to report "hosted".
+ * `runtimeMode` is the live environment, set by `resolvePlatformRuntime` from
+ * `mode` and whatever platform host (real or, in tests, mocked) was detected
+ * via `detectPlatformHost`.
  */
 export type RuntimeMode = 'standalone' | 'hosted';
 

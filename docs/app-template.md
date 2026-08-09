@@ -36,6 +36,22 @@ As of Phase 4, three of the thirteen (`notifications`, `i18n`,
 the rest remain recorded only in `platform-app.json`. See
 [capabilities.md](./capabilities.md).
 
+### `mode` has real runtime meaning (Phase 5)
+
+Unlike the ten recorded-only capabilities above, `mode` is not just
+metadata: the generated app's own `main.tsx` resolves it against whatever
+platform host is present at boot (see
+[platform-sdk.md](./platform-sdk.md#standalone-vs-hosted) and
+[ADR 0005](./adr/0005-runtime-mode-boundary.md)). In particular, **the
+form's default, `platform-mfe`, requires a platform host to boot at all**
+- no Super App shell exists yet, so a freshly scaffolded app left at the
+default mode shows a "Platform host required" screen instead of its UI on
+`npm run dev`, until either a real host exists or `platform-app.json`'s
+`mode` is changed to `standalone` or `standalone-and-mfe`. This is
+intentional (a mode that never fails without a host would carry no real
+meaning), but it is a deliberate DX tradeoff worth knowing before picking
+`platform-mfe` for an app you intend to develop standalone today.
+
 ## Steps
 
 ```text

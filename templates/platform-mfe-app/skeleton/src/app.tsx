@@ -8,6 +8,7 @@ import { ThemeProvider } from '@platform/ui';
 import { ToastProvider } from '@platform/ui';
 import { appInfo } from './lib/app-info';
 import { createRouterNavigationAdapter } from './lib/platform-navigation-adapter';
+import type { ResolvedPlatformRuntime } from './lib/platform-runtime';
 import { router } from './router';
 {% if 'i18n' in values.capabilities %}
 // `i18n` capability (see src/capabilities/i18n/): provides useI18n()/t() to
@@ -27,9 +28,17 @@ const queryClient = new QueryClient({
 
 const navigationAdapter = createRouterNavigationAdapter();
 
-export function App() {
+export function App({ runtime }: { runtime: ResolvedPlatformRuntime }) {
   return (
-    <PlatformProvider config={{ app: appInfo, adapters: { navigation: navigationAdapter } }}>
+    <PlatformProvider
+      config={{
+        app: appInfo,
+        runtimeMode: runtime.runtimeMode,
+        // Local router bridge is the default; a host that supplies its own
+        // navigation adapter overrides it.
+        adapters: { navigation: navigationAdapter, ...runtime.adapters },
+      }}
+    >
       {% if 'i18n' in values.capabilities %}<I18nProvider>{% endif %}
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>

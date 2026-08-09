@@ -11,7 +11,7 @@
       "package": "@platform/sdk",
       "packageDir": "packages/platform-sdk",
       "tarball": "vendor/platform-sdk-0.1.0.tgz",
-      "sourceFingerprint": "9e2c8f18d01345e1ed1305c4dded3f7eee7f88d52d2df0818487bba2326cfb5a",
+      "sourceFingerprint": "517503966b266b5332d8d4cc49234510bc08defe561ef38814ffe3341f50d52e",
       "note": "sourceFingerprint is a sha256 over packages/platform-sdk's src/** and package.json (see computePackageFingerprint in packages/template-validation/src/vendorFingerprint.ts), recorded at the time vendor/platform-sdk-0.1.0.tgz was last built. It is checked by packages/template-validation/src/vendorTarball.test.ts to catch the tarball going stale relative to platform-sdk's source. Whenever packages/platform-sdk changes: rebuild it (yarn workspace @platform/sdk build), `npm pack` it, copy the resulting tarball over skeleton/vendor/platform-sdk-0.1.0.tgz, delete and regenerate skeleton/package-lock.json (`npm install` does not re-hash an existing file: dependency, per the Phase 2.1 EINTEGRITY incident), then recompute and update sourceFingerprint here."
     }
   ]
