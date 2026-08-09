@@ -1,12 +1,20 @@
 import { cn } from '../../lib/cn.js';
 
-export function Spinner({ className }: { className?: string }) {
+export function Spinner({
+  className,
+  'aria-label': ariaLabel,
+}: {
+  className?: string;
+  'aria-label'?: string;
+}) {
   return (
     <svg
       className={cn('size-5 animate-spin text-muted-foreground', className)}
       viewBox="0 0 24 24"
       fill="none"
-      aria-hidden="true"
+      role={ariaLabel ? 'status' : undefined}
+      aria-label={ariaLabel}
+      aria-hidden={ariaLabel ? undefined : 'true'}
     >
       <circle
         className="opacity-25"
