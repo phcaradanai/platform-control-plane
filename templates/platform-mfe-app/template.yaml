@@ -133,6 +133,8 @@ spec:
     # as scaffolder template syntax and stripped out. copyWithoutRender is
     # the older, now-inert key on this @backstage/plugin-scaffolder-backend
     # version - the fetch:template handler only reads copyWithoutTemplating.
+    # vendor/** (the @platform/ui tarball) is copied verbatim because it is
+    # binary - nunjucks must never touch it.
     - id: fetchBase
       name: Fetch Skeleton
       action: fetch:template
@@ -140,6 +142,7 @@ spec:
         url: ./skeleton
         copyWithoutTemplating:
           - .github/workflows/**
+          - vendor/**
         values:
           name: ${{ parameters.name }}
           title: ${{ parameters.title }}

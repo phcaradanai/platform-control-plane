@@ -1,7 +1,7 @@
 import '@fontsource-variable/inter';
 import '@unocss/reset/tailwind.css';
 import 'virtual:uno.css';
-import './styles/theme.css';
+import '@platform/ui/theme.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

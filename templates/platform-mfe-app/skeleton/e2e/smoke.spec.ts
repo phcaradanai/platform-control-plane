@@ -72,7 +72,7 @@ test('form demo validates and submits', async ({ page }) => {
   await page.getByRole('button', { name: 'Submit' }).click();
 
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect(page.getByText('Form submitted')).toBeVisible();
+  await expect(page.getByText('Form submitted', { exact: true })).toBeVisible();
 });
 
 test('unknown route renders the not-found page', async ({ page }) => {

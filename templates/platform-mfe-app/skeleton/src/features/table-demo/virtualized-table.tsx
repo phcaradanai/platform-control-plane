@@ -10,12 +10,12 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 
-import { QueryBoundary } from '../../components/feedback/query-boundary';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
-import { Input } from '../../components/ui/input';
-import { cn } from '../../lib/cn';
+import { QueryBoundary } from '@platform/ui';
+import { Badge } from '@platform/ui';
+import { Button } from '@platform/ui';
+import { Card } from '@platform/ui';
+import { Input } from '@platform/ui';
+import { cn } from '@platform/ui';
 import type { DemoRow } from './data';
 import { useDemoRows } from './use-demo-rows';
 

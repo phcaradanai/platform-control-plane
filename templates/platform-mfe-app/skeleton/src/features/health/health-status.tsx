@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { getHealth } from '../../api/health';
-import { QueryBoundary } from '../../components/feedback/query-boundary';
-import { Badge } from '../../components/ui/badge';
-import { Card } from '../../components/ui/card';
+import { QueryBoundary } from '@platform/ui';
+import { Badge } from '@platform/ui';
+import { Card } from '@platform/ui';
 
 export function HealthStatus() {
   const query = useQuery({

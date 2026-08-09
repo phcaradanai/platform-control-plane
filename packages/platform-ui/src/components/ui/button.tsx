@@ -2,7 +2,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 
-import { cn } from '../../lib/cn';
+import { cn } from '../../lib/cn.js';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'secondary' | 'outline' | 'ghost' | 'destructive';

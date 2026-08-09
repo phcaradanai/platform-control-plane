@@ -39,12 +39,25 @@ export function renderSkeleton(
         .relative(skeletonDir, abs)
         .split(path.sep)
         .join('/');
-      const source = fs.readFileSync(abs, 'utf8');
       const skipRender = copyWithoutTemplatingPrefixes.some(pattern => {
         const prefix = pattern.replace(/\*\*?$/, '');
         return relPath.startsWith(prefix);
       });
-      rendered.set(relPath, skipRender ? source : env.renderString(source, context));
+      if (skipRender) {
+        // Byte-exact copy for non-templated assets. Text files (e.g. GitHub
+        // Actions workflows) are kept as-is; binary files (the vendor
+        // tarball) are base64-encoded so the Map<string, string> contract
+        // holds without corrupting them.
+        const buf = fs.readFileSync(abs);
+        const looksBinary = buf.includes(0);
+        rendered.set(
+          relPath,
+          looksBinary ? buf.toString('base64') : buf.toString('utf8'),
+        );
+        return;
+      }
+      const source = fs.readFileSync(abs, 'utf8');
+      rendered.set(relPath, env.renderString(source, context));
     }
   };
 

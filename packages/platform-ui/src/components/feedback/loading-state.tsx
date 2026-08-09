@@ -1,4 +1,4 @@
-import { Spinner } from '../ui/spinner';
+import { Spinner } from '../ui/spinner.js';
 
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
   return (

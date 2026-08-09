@@ -132,6 +132,22 @@ describe('platform-mfe-app template.yaml', () => {
     );
   });
 
+  it('copies the vendored @platform/ui tarball without templating it', () => {
+    const fetchStep = template.spec.steps.find(
+      (s: { id: string }) => s.id === 'fetchBase',
+    );
+    expect(fetchStep.input.copyWithoutTemplating).toContain('vendor/**');
+
+    // The tarball must exist in the skeleton (binary; copied verbatim).
+    const vendorDir = path.join(skeletonDir, 'vendor');
+    expect(fs.existsSync(vendorDir)).toBe(true);
+    const tarballs = fs.readdirSync(vendorDir).filter(f => f.endsWith('.tgz'));
+    expect(tarballs.length).toBeGreaterThan(0);
+    // A .tgz is a gzip stream - first two bytes are the gzip magic 0x1f 0x8b.
+    const head = fs.readFileSync(path.join(vendorDir, tarballs[0]));
+    expect([...head.subarray(0, 2)]).toEqual([0x1f, 0x8b]);
+  });
+
   it('produces links to the repository and catalog entity on success', () => {
     const linkTitles = template.spec.output.links.map(
       (l: { title: string }) => l.title,
@@ -176,6 +192,7 @@ describe('platform-mfe-app skeleton', () => {
       'src/router.tsx',
       'src/routes/__root.tsx',
       'src/routes/index.tsx',
+      'src/routes/components.tsx',
       'src/test/setup.ts',
       'e2e/smoke.spec.ts',
     ]) {
@@ -234,6 +251,75 @@ describe('platform-mfe-app skeleton', () => {
     const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
     expect(lock.lockfileVersion).toBe(3);
     expect(lock.packages[''].name).toBe('${{ values.name }}');
+  });
+
+  it('consumes the shared @platform/ui package from the vendored tarball', () => {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(skeletonDir, 'package.json'), 'utf8'),
+    );
+    const spec = pkg.dependencies['@platform/ui'];
+    expect(spec).toMatch(/^file:\.\/vendor\/platform-ui-\d+\.\d+\.\d+\.tgz$/);
+
+    // The lockfile pins the tarball too (frozen npm ci must resolve it).
+    const lock = JSON.parse(
+      fs.readFileSync(path.join(skeletonDir, 'package-lock.json'), 'utf8'),
+    );
+    const resolved = lock.packages['node_modules/@platform/ui']?.resolved;
+    expect(resolved).toMatch(/^file:vendor\/platform-ui-\d+\.\d+\.\d+\.tgz$/);
+  });
+
+  it('keeps product-specific code out of the platform package boundary', () => {
+    // Moved into @platform/ui - must not be re-implemented per app.
+    for (const file of [
+      'src/components/ui/button.tsx',
+      'src/components/theme/theme-provider.tsx',
+      'src/components/feedback/query-boundary.tsx',
+      'src/lib/cn.ts',
+      'src/styles/theme.css',
+    ]) {
+      expect(fs.existsSync(path.join(skeletonDir, file))).toBe(false);
+    }
+    // The app still owns its layout, features, and routes.
+    for (const file of [
+      'src/components/layout/app-shell.tsx',
+      'src/routes/__root.tsx',
+      'src/routes/index.tsx',
+    ]) {
+      expect(fs.existsSync(path.join(skeletonDir, file))).toBe(true);
+    }
+  });
+
+  it('ships a component catalog route for visual verification', () => {
+    expect(
+      fs.existsSync(path.join(skeletonDir, 'src/routes/components.tsx')),
+    ).toBe(true);
+    const routeTree = fs.readFileSync(
+      path.join(skeletonDir, 'src/routeTree.gen.ts'),
+      'utf8',
+    );
+    expect(routeTree).toContain("'/components'");
+  });
+
+  it('consumes shared UnoCSS theme, shortcuts, and preflights from @platform/ui', () => {
+    const uno = fs.readFileSync(
+      path.join(skeletonDir, 'uno.config.ts'),
+      'utf8',
+    );
+    expect(uno).toContain("@platform/ui/uno-preset");
+    expect(uno).toContain('platformUnoTheme');
+    expect(uno).toContain('platformUnoShortcuts');
+    expect(uno).toContain('platformUnoPreflights');
+    // UnoCSS must scan the package dist so utilities used inside the
+    // primitives are generated in the app bundle.
+    expect(uno).toContain('node_modules/@platform/ui/dist/**/*.js');
+  });
+
+  it('loads design tokens explicitly from the package stylesheet', () => {
+    const main = fs.readFileSync(path.join(skeletonDir, 'src/main.tsx'), 'utf8');
+    expect(main).toContain("@platform/ui/theme.css");
+    expect(
+      fs.existsSync(path.join(skeletonDir, 'src/styles')),
+    ).toBe(false);
   });
 
   it('runs a frozen, deterministic install in generated CI', () => {

@@ -1,8 +1,8 @@
 import { Monitor, Moon, Sun } from 'lucide-react';
 
-import { cn } from '../../lib/cn';
-import { useTheme } from './theme-provider';
-import type { ThemePreference } from './theme-provider';
+import { cn } from '../../lib/cn.js';
+import { useTheme } from './theme-provider.js';
+import type { ThemePreference } from './theme-provider.js';
 
 const OPTIONS: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },
