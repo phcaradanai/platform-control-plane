@@ -82,17 +82,30 @@ by `src/lib/env.ts`:
 Mode: **${{ values.mode }}**
 Lifecycle: **${{ values.lifecycle }}**
 
-Requested capabilities (recorded in `platform-app.json`, not yet
-implemented):
+Requested capabilities (recorded in `platform-app.json`):
 
 ${{ values.capabilities | dump }}
+
+{% set composedCapabilities = ['notifications', 'i18n', 'observability'] %}
+Of these, the following are **composed** — wired into this application's
+code, not just recorded (see `docs/capabilities.md` in the
+`platform-control-plane` App Factory repo for the composition model):
+
+{% for capability in values.capabilities %}{% if capability in composedCapabilities %}- **${{ capability }}** — see `src/capabilities/${{ capability }}/`
+{% endif %}{% endfor %}
+The following are recorded in `platform-app.json` for a later composition
+phase but are not yet installed or configured:
+
+{% for capability in values.capabilities %}{% if not (capability in composedCapabilities) %}- ${{ capability }}
+{% endif %}{% endfor %}
 
 ## What is a placeholder
 
 - `platform-app.json` `runtime.status` is `not-configured` — no Module
   Federation host/remote wiring exists yet.
-- None of the requested capabilities above are installed or configured.
-  They are recorded so a later composition phase knows what to add.
+- Requested capabilities outside `notifications` / `i18n` / `observability`
+  are recorded only — nothing beyond `platform-app.json` reflects them yet.
+  They exist so a later composition phase knows what to add.
 - The health endpoint (`/health` under `VITE_API_BASE_URL`) is an example
   of the API boundary, not a real backend — no server is generated.
 - There is no deployment configuration.
@@ -101,23 +114,25 @@ ${{ values.capabilities | dump }}
 
 ```
 src/
-  api/          typed API boundary (client, types, domain endpoints)
+  api/            typed API boundary (client, types, domain endpoints)
+  capabilities/   composed capability modules (present only for requested,
+                   composed capabilities - see "Selected capabilities" above)
   components/
-    feedback/   loading / empty / error / not-found states
-    layout/     app shell, header, footer
-    theme/      light / dark / system theme provider + toggle
-    ui/         Radix-based accessible primitives
-  features/     feature modules (health, table demo, form demo)
-  lib/          cn helper, env validation, app-info
-  routes/       TanStack Router file-based routes
-  test/         Vitest setup
-  styles/       semantic CSS variables
-e2e/            Playwright smoke specs
+    feedback/     loading / empty / error / not-found states
+    layout/       app shell, header, footer
+    theme/        light / dark / system theme provider + toggle
+    ui/           Radix-based accessible primitives
+  features/       feature modules (health, table demo, form demo)
+  lib/            cn helper, env validation, app-info
+  routes/         TanStack Router file-based routes
+  test/           Vitest setup
+e2e/              Playwright smoke specs
 ```
 
 ## What comes later
 
-Runtime Module Federation loading, capability composition, the Super App
-shell, authentication/RBAC enforcement, and deployment are out of scope
-for this generated foundation and are planned for a later App Factory
-phase.
+Runtime Module Federation loading, the Super App shell, full
+authentication/RBAC enforcement, and deployment are out of scope for this
+generated foundation and are planned for a later App Factory phase. See
+docs/capabilities.md in `platform-control-plane` for which capabilities are
+composed today versus still only recorded.

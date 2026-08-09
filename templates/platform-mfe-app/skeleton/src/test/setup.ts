@@ -47,3 +47,12 @@ Object.defineProperty(globalThis, 'IntersectionObserver', {
   writable: true,
   value: IntersectionObserverStub,
 });
+
+// jsdom also does not implement the pointer-capture APIs or scrollIntoView
+// that @radix-ui/react-select's open/close and positioning logic calls
+// directly on the DOM element - without these, clicking a Select trigger
+// in a test throws `target.hasPointerCapture is not a function`.
+Element.prototype.hasPointerCapture ??= vi.fn(() => false);
+Element.prototype.setPointerCapture ??= vi.fn();
+Element.prototype.releasePointerCapture ??= vi.fn();
+Element.prototype.scrollIntoView ??= vi.fn();

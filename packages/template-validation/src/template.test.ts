@@ -115,6 +115,7 @@ describe('platform-mfe-app template.yaml', () => {
       ]),
     ).toEqual([
       ['fetchBase', 'fetch:template'],
+      ['pruneCapabilities', 'fs:delete'],
       ['publish', 'publish:github'],
       ['register', 'catalog:register'],
     ]);

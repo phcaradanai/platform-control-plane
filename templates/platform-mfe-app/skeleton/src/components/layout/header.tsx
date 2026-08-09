@@ -2,6 +2,14 @@ import { Link } from '@tanstack/react-router';
 
 import { appInfo } from '../../lib/app-info';
 import { ThemeToggle } from '@platform/ui';
+{% if 'notifications' in values.capabilities %}
+// `notifications` capability (see src/capabilities/notifications/).
+import { NotificationsCenter } from '../../capabilities/notifications/notifications-center';
+{% endif %}
+{% if 'i18n' in values.capabilities %}
+// `i18n` capability (see src/capabilities/i18n/).
+import { LanguageSwitcher } from '../../capabilities/i18n/language-switcher';
+{% endif %}
 
 export function Header() {
   return (
@@ -18,6 +26,16 @@ export function Header() {
           <NavLink to="/components" label="Components" />
           <NavLink to="/table" label="Table" />
           <NavLink to="/form" label="Form" />
+          {% if 'i18n' in values.capabilities %}
+          <div className="ml-2">
+            <LanguageSwitcher />
+          </div>
+          {% endif %}
+          {% if 'notifications' in values.capabilities %}
+          <div className="ml-2">
+            <NotificationsCenter />
+          </div>
+          {% endif %}
           <div className="ml-2">
             <ThemeToggle />
           </div>

@@ -46,11 +46,17 @@ export default tseslint.config(
       'react-refresh/only-export-components': 'off',
     },
   },
-  // Radix re-export primitives (src/components/ui) and files that pair a
-  // component with a hook (theme-provider, toast) are library-style modules
-  // where the fast-refresh rule produces only noise.
+  // Radix re-export primitives (src/components/ui), files that pair a
+  // component with a hook (theme-provider, toast), and composed capability
+  // modules (src/capabilities/**, same provider+hook shape - see
+  // docs/capabilities.md) are library-style modules where the fast-refresh
+  // rule produces only noise.
   {
-    files: ['src/components/ui/**', 'src/components/theme/theme-provider.tsx'],
+    files: [
+      'src/components/ui/**',
+      'src/components/theme/theme-provider.tsx',
+      'src/capabilities/**',
+    ],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

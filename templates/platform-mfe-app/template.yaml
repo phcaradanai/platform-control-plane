@@ -7,9 +7,11 @@ metadata:
   description: >-
     Creates a GitHub repository for a new Platform MFE Application from a
     controlled skeleton and registers it in the Software Catalog. Runtime
-    module federation, Nx capability composition, and deployment are added
-    in a later phase - this template only produces the application
-    foundation and records requested capabilities.
+    module federation and deployment are added in a later phase. A small,
+    representative set of capabilities (notifications, i18n, observability)
+    is composed into the generated application's code today - see
+    docs/capabilities.md; the remaining curated capabilities are still only
+    recorded in platform-app.json for that later phase.
 spec:
   owner: group:default/platform-team
   type: service
@@ -103,9 +105,10 @@ spec:
           type: array
           description: >-
             Curated platform capabilities to request for this application.
-            These are recorded in platform-app.json as requested capabilities
-            for the later Nx composition phase - selecting a capability here
-            does not install or configure it yet.
+            All selections are recorded in platform-app.json.
+            notifications, i18n, and observability are additionally composed
+            into the generated application's code (see docs/capabilities.md);
+            the rest remain requests for a later composition phase.
           items:
             type: string
             enum:
@@ -152,6 +155,24 @@ spec:
           lifecycle: ${{ parameters.lifecycle }}
           capabilities: ${{ parameters.capabilities }}
           repo: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    # The skeleton always contains all composed capabilities' source under
+    # src/capabilities/<id>/ (fetchBase rendered app.tsx/main.tsx/header.tsx
+    # with nunjucks `${{ ... }}` guards that already dropped the imports for
+    # anything not selected - see docs/capabilities.md). This step deletes
+    # the now-unreferenced capability directories for anything not selected,
+    # so the generated repository never ships dead code. This is the single
+    # source of truth for which capability ids are composed (not just
+    # recorded) - packages/template-validation reads this step's `each`
+    # list rather than duplicating it, so the two can't drift.
+    - id: pruneCapabilities
+      name: Remove Unselected Capability Modules
+      action: fs:delete
+      each: ['notifications', 'i18n', 'observability']
+      if: ${{ not (each.value in parameters.capabilities) }}
+      input:
+        files:
+          - src/capabilities/${{ each.value }}/**
 
     - id: publish
       name: Publish to GitHub

@@ -31,16 +31,29 @@ This is a closed enum in `template.yaml` - the form cannot submit any
 value outside this list, and there is no free-text field for package
 names or install commands anywhere in the template.
 
+As of Phase 4, three of the thirteen (`notifications`, `i18n`,
+`observability`) are **composed** into the generated application's code;
+the rest remain recorded only in `platform-app.json`. See
+[capabilities.md](./capabilities.md).
+
 ## Steps
 
 ```text
-fetchBase  -> fetch:template     render templates/platform-mfe-app/skeleton
-publish    -> publish:github     create + push the GitHub repository (defaultBranch: main)
-register   -> catalog:register   register catalog-info.yaml in the new repo
+fetchBase           -> fetch:template   render templates/platform-mfe-app/skeleton
+pruneCapabilities    -> fs:delete       remove unselected composed capabilities' source (Phase 4)
+publish              -> publish:github  create + push the GitHub repository (defaultBranch: main)
+register             -> catalog:register register catalog-info.yaml in the new repo
 ```
 
-All three are Backstage built-in actions; no custom scaffolder action was
+All four are Backstage built-in actions; no custom scaffolder action was
 implemented, per the spec's preference for built-ins.
+
+`pruneCapabilities` (added in Phase 4) deletes
+`src/capabilities/<id>/**` in the fetched working directory for each of
+`notifications`, `i18n`, and `observability` that wasn't selected - see
+[capabilities.md](./capabilities.md) for the full composition model and
+why only these three curated capabilities have a real generation effect
+today.
 
 `fetchBase` passes `copyWithoutTemplating: ['.github/workflows/**']`.
 Without this, the skeleton's `.github/workflows/ci.yml` would be run
@@ -97,12 +110,14 @@ required by the spec:
 because plain interpolation of an array produces a comma-joined string
 (`authentication,rbac`), not valid JSON.
 
-`runtime.status` is always `not-configured` - this phase does not install
-or wire up any capability or Module Federation runtime. The generated
-README explicitly lists what was generated, which capabilities were
-requested, which parts are placeholders, how to run validation
-(`npm install && npm run typecheck && npm run build`), and that runtime
-integration is a later phase.
+`runtime.status` is always `not-configured` - no Module Federation runtime
+is installed or wired up by this phase. As of Phase 4, `notifications`,
+`i18n`, and `observability` are composed into `src/capabilities/` when
+selected (see [capabilities.md](./capabilities.md)); the other ten
+curated capabilities remain recorded only. The generated README explicitly
+lists what was generated, which requested capabilities are composed versus
+recorded only, how to run validation (`npm ci && npm run typecheck && npm
+run build`), and that Module Federation integration is a later phase.
 
 The generated app also vendors two shared packages as tarballs under
 `vendor/` (`@platform/ui` for UI primitives, `@platform/sdk` for the
