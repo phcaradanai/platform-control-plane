@@ -19,3 +19,19 @@ metadata:
 spec:
   type: team
   children: []
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-group
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-admins
+  description: >-
+    Full-access group for the control plane's permission policy (see
+    packages/backend/src/permissions/policy.ts and
+    docs/identity-and-access.md). Intentionally empty by default - nobody
+    is an admin until a User entity below adds
+    `spec.memberOf: [platform-admins]`. Not backed by real org/team data
+    yet - see docs/catalog-model.md.
+spec:
+  type: team
+  children: []

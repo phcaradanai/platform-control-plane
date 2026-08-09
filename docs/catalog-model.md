@@ -35,6 +35,12 @@ yet. Replace `group:default/platform-team` with a real
 `examples/org.yaml` for the pattern, or import from GitHub via
 `https://backstage.io/docs/integrations/github/org`).
 
+`examples/org.yaml` also defines `group:default/platform-admins` (empty
+by default), which the backend's permission policy grants full access to
+- distinct from `platform-team`'s catalog-ownership role. See
+[identity-and-access.md](./identity-and-access.md) for how the two groups
+are used and how to add an admin.
+
 ## How these entities get into the catalog
 
 `app-config.yaml` (and `app-config.production.yaml`, which overrides

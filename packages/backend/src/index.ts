@@ -45,14 +45,9 @@ backend.add(import('@backstage/plugin-catalog-backend-module-logs'));
 
 // permission plugin
 backend.add(import('@backstage/plugin-permission-backend'));
-// DEVELOPMENT-ONLY: allows every action for every identity. This is a
-// placeholder ahead of real identities/groups (see catalog-model.md) and
-// must be replaced with a real policy gating scaffolder template
-// execution before any production use - it is not a safe default.
-// See https://backstage.io/docs/permissions/getting-started for how to create your own permission policy
-backend.add(
-  import('@backstage/plugin-permission-backend-module-allow-all-policy'),
-);
+// Platform Admin / Developer access policy - see
+// src/permissions/policy.ts and docs/identity-and-access.md.
+backend.add(import('./permissions/module'));
 
 // search plugin
 backend.add(import('@backstage/plugin-search-backend'));

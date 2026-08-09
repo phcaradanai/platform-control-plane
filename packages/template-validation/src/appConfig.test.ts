@@ -35,8 +35,9 @@ describe('backend wiring', () => {
     'utf8',
   );
 
-  it('registers a permissive local permission policy', () => {
-    expect(indexTs).toContain(
+  it('registers the real Platform Admin / Developer permission policy, not an allow-all placeholder', () => {
+    expect(indexTs).toContain('./permissions/module');
+    expect(indexTs).not.toContain(
       '@backstage/plugin-permission-backend-module-allow-all-policy',
     );
   });
@@ -68,5 +69,23 @@ describe('app-config.production.yaml', () => {
     for (const value of Object.values(conn) as string[]) {
       expect(value).toMatch(/^\$\{POSTGRES_[A-Z_]+\}$/);
     }
+  });
+
+  it('deletes the guest provider from the merged config instead of leaving it enabled', () => {
+    // `null` here is load-bearing: Backstage's config merge treats an
+    // overriding `null` as "unset this key", which is what actually
+    // removes app-config.yaml's `guest: {}` from the merged production
+    // config - see docs/identity-and-access.md. An empty object (`{}`)
+    // would re-enable it.
+    expect(prodConfig.auth.providers.guest).toBeNull();
+  });
+
+  it('configures GitHub sign-in from AUTH_GITHUB_CLIENT_ID/SECRET without a bypass around the catalog', () => {
+    const github = prodConfig.auth.providers.github.production;
+    expect(github.clientId).toBe('${AUTH_GITHUB_CLIENT_ID}');
+    expect(github.clientSecret).toBe('${AUTH_GITHUB_CLIENT_SECRET}');
+    const resolver = github.signIn.resolvers[0];
+    expect(resolver.resolver).toBe('usernameMatchingUserEntityName');
+    expect(resolver.dangerouslyAllowSignInWithoutUserInCatalog).toBeUndefined();
   });
 });

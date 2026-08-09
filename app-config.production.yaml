@@ -31,7 +31,24 @@ backend:
 
 auth:
   providers:
-    guest: {}
+    # `guest: null` deletes the base app-config.yaml's guest provider from
+    # the merged config (Backstage's config merge treats an overriding
+    # `null` as "unset this key", not "empty object") - production must
+    # never allow guest sign-in. See docs/identity-and-access.md.
+    guest: null
+    github:
+      production:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+        signIn:
+          resolvers:
+            # No `dangerouslyAllowSignInWithoutUserInCatalog` here (unlike
+            # app-config.local.yaml.example's optional local testing
+            # block): a GitHub sign-in only succeeds if the account's
+            # username matches an existing catalog `User` entity. This is
+            # the actual admin/developer access gate in production - see
+            # docs/identity-and-access.md.
+            - resolver: usernameMatchingUserEntityName
 
 catalog:
   # Overrides the default list locations from app-config.yaml as these contain example data.

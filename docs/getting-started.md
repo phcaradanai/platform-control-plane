@@ -186,12 +186,20 @@ See [app-template.md](./app-template.md) for what gets generated and
   the project prompt's "Out of Scope" section).
 - GitHub OAuth sign-in is wired but inert until `AUTH_GITHUB_CLIENT_ID` /
   `AUTH_GITHUB_CLIENT_SECRET` are configured; local development uses the
-  guest provider by default.
+  guest provider by default. It's the real, required sign-in path in
+  production (`app-config.production.yaml` disables guest entirely) - see
+  [identity-and-access.md](./identity-and-access.md). Full browser OAuth
+  consent has not been exercised end-to-end (no registered OAuth app in
+  this environment); what's verified is that the backend boots cleanly
+  with the provider configured and that the config-level sign-in gate is
+  in place.
 - The full `fetch:template` -> `publish:github` -> `catalog:register` chain,
   including a real `GITHUB_TOKEN` and a live GitHub repository creation,
   has been exercised end-to-end (Phase 1.1) - see
   `BACKSTAGE_APP_FACTORY_PHASE_1_REPORT.md`'s "Phase 1.1 Verification
   Closure" section for the run details.
-- `permission-backend-module-allow-all-policy` is a development-only
-  placeholder (see the comment in `packages/backend/src/index.ts`) and
-  must be replaced with a real policy before any production use.
+- Permissions are enforced by a real Platform Admin / Developer policy
+  (`packages/backend/src/permissions/policy.ts`) as of Phase 3.1 - see
+  [identity-and-access.md](./identity-and-access.md). Real
+  Keycloak/enterprise IdP integration, a tenant system, and
+  conditional/resource-scoped permission rules remain out of scope.

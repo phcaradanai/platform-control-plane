@@ -75,10 +75,16 @@ To enable it locally:
    module's config schema once present, so uncommenting it without both
    env vars set will fail the backend on startup.
 
-In production, add the equivalent `auth.providers.github.production` block
-to your deployment's config and remove the `guest: {}` provider from
-`app-config.production.yaml`'s `auth.providers` once real identities are
-available.
+`app-config.production.yaml` already does this: `auth.providers.github.production`
+is configured from `AUTH_GITHUB_CLIENT_ID`/`AUTH_GITHUB_CLIENT_SECRET`,
+`auth.providers.guest` is explicitly set to `null` (deleting the base
+config's guest provider from the merged config, not leaving it as an
+empty object - verified with `backstage-cli config:print`/`config:check`),
+and the sign-in resolver omits `dangerouslyAllowSignInWithoutUserInCatalog`
+so only GitHub accounts matching an existing catalog `User` entity can
+sign in at all. See [identity-and-access.md](./identity-and-access.md)
+for the full model, including how this interacts with the backend's
+Platform Admin / Developer permission policy.
 
 ## Phase 1.1: how the live scaffolder test was run
 

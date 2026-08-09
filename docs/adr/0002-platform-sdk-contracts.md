@@ -82,7 +82,7 @@ contract a future phase implements against rather than redesigns.
   "ready"/"unavailable" shapes are the durable boundary.
 - `usePermissions().can()` failing closed by default means any future
   real permissions provider must be explicit about grants; there is no
-  "allow all" standalone default to accidentally ship to production (unlike
-  the backend's `permission-backend-module-allow-all-policy`, which is
-  documented in `CLAUDE.md` as a development-only placeholder that must
-  not reach production).
+  "allow all" standalone default to accidentally ship to production. The
+  backend's own equivalent risk - `permission-backend-module-allow-all-policy`
+  as a development-only placeholder - was closed out in Phase 3.1; see
+  [ADR 0003](./0003-identity-and-access-foundation.md).
