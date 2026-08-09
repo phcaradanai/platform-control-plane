@@ -30,6 +30,14 @@ backend:
       #     $file: <file-path>/ca/server.crt
 
 auth:
+  # See app-config.yaml's `auth.environment` comment. Must equal the key
+  # under `auth.providers.github` below (`production`) - the frontend
+  # sends this value as `?env=...` on the OAuth start request, which
+  # selects that block; without this override the frontend would default
+  # to `env=development`, which this file has no matching provider block
+  # for. It also makes packages/app/src/modules/sign-in/SignInPage.tsx
+  # hide the Guest button here.
+  environment: production
   providers:
     # `guest: null` deletes the base app-config.yaml's guest provider from
     # the merged config (Backstage's config merge treats an overriding

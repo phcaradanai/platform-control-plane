@@ -27,6 +27,13 @@ describe('app-config.yaml loads and wires GitHub + permissions', () => {
   it('keeps the RepoUrlPicker-facing integration restricted to github.com only', () => {
     expect(config.integrations.github).toHaveLength(1);
   });
+
+  it('marks the environment as development for the frontend sign-in page', () => {
+    // packages/app/src/modules/sign-in/SignInPage.tsx reads this
+    // frontend-visible flag to decide whether to offer the Guest button
+    // alongside GitHub.
+    expect(config.auth.environment).toBe('development');
+  });
 });
 
 describe('backend wiring', () => {
@@ -87,5 +94,9 @@ describe('app-config.production.yaml', () => {
     const resolver = github.signIn.resolvers[0];
     expect(resolver.resolver).toBe('usernameMatchingUserEntityName');
     expect(resolver.dangerouslyAllowSignInWithoutUserInCatalog).toBeUndefined();
+  });
+
+  it('marks the environment as production so the frontend sign-in page hides Guest', () => {
+    expect(prodConfig.auth.environment).toBe('production');
   });
 });

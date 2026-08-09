@@ -78,6 +78,17 @@ techdocs:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
 auth:
+  # Frontend-visible flag (@backstage/plugin-auth-backend's own config
+  # schema marks it `visibility: frontend`). This is NOT just a UI label:
+  # the frontend's GitHub OAuth connector appends it as `?env=...` on every
+  # request to `/api/auth/github/start`, which is how the backend picks
+  # the matching `auth.providers.github.<environment>` block - so it MUST
+  # match a key under `auth.providers.github` wherever GitHub is
+  # configured. It also drives which sign-in buttons
+  # packages/app/src/modules/sign-in/SignInPage.tsx offers, and stays in
+  # sync with `auth.providers.guest`: present here, `null`-deleted in
+  # app-config.production.yaml. See docs/identity-and-access.md.
+  environment: development
   # see https://backstage.io/docs/auth/ to learn about auth providers
   providers:
     # See https://backstage.io/docs/auth/guest/provider

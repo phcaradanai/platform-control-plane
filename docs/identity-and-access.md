@@ -36,6 +36,27 @@ below.
   phase; this file documents the config that a future deploy step will
   use).
 
+### Sign-in page (frontend)
+
+The backend's auth providers above are only reachable if the sign-in page
+actually offers them. `packages/app/src/modules/sign-in/SignInPage.tsx`
+overrides the app plugin's built-in sign-in page (which hardcodes
+`providers: ['guest']` regardless of environment - see
+`node_modules/@backstage/plugin-app/dist/extensions/DefaultSignInPage.esm.js`)
+with one that reads `auth.environment` - a frontend-visible config key
+owned by `@backstage/plugin-auth-backend` itself (`visibility: frontend`
+in its schema) - and offers:
+
+- `development` (`app-config.yaml`): Guest **and** GitHub.
+- anything else, including unset (`app-config.production.yaml` sets it to
+  `production`): GitHub only - no Guest button is rendered, matching the
+  backend having no guest provider to answer it.
+
+Platform Admin / Developer are **not** separate login buttons - they stay
+post-login roles derived from `PlatformAccessPolicy`
+(`packages/backend/src/permissions/policy.ts`) reading catalog group
+membership, unchanged by this.
+
 ## Permission policy
 
 `packages/backend/src/permissions/policy.ts` (`PlatformAccessPolicy`)
@@ -181,6 +202,36 @@ Hermetic (CI):
   exercises `scripts/provision-identities.mjs`: rendering, validation
   rejections, `--check`, and that its output parses with the catalog's
   strict YAML parser.
+- `packages/template-validation/src/appConfig.test.ts` and
+  `productionConfig.test.ts` additionally assert `auth.environment` is
+  `development` in `app-config.yaml`, `production` in
+  `app-config.production.yaml`, and that the real config-loader merge
+  carries the production value through (not left at the base
+  `development`).
+- `packages/app/src/modules/sign-in/SignInPage.test.tsx` - renders the
+  actual sign-in page component (via `renderInTestApp`, so real Router +
+  API wiring, not a shallow render) under each `auth.environment` value
+  and asserts the Guest button/card is present only for `development`,
+  while GitHub is present in every case.
+- `packages/app/e2e-tests/sign-in.test.ts` - real dev server, real
+  browser (Playwright, part of `yarn test:e2e:smoke` and the CI `e2e`
+  job): loads `/` and asserts both the Guest and GitHub sign-in options
+  are visible, proving GitHub sign-in is reachable from the UI, not only
+  configured in the backend. Production's GitHub-only behavior is **not**
+  exercised in a real browser - the provider list is decided entirely by
+  frontend config (`auth.environment`), so a live check would only need a
+  second frontend process on another port with
+  `auth.environment: production`, not a deployed PostgreSQL/GitHub OAuth
+  app; that second server just hasn't been added yet. Today it's covered
+  hermetically only: `SignInPage.test.tsx` renders the real component
+  under `auth.environment: production` and asserts no Guest button, and
+  the config tests above assert the production file itself sets it.
+
+Known gap: local development's GitHub button is visible even without the
+`app-config.local.yaml.example` opt-in overlay (see "Sign-in" above) -
+clicking it in that state hits an unconfigured provider and fails. This
+matches the "local development **may** offer GitHub" scope (not "must
+work out of the box") but is worth knowing before you click it.
 
 Live (Phase 3.1 closure run, real backend + real GitHub):
 

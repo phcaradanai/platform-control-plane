@@ -132,6 +132,19 @@ describe('merged production config (real config-loader merge semantics)', () => 
   it('keeps the permission framework enabled', () => {
     expect(config.permission.enabled).toBe(true);
   });
+
+  it('overrides auth.environment to production (not left as the base development value)', () => {
+    expect(config.auth.environment).toBe('production');
+  });
+
+  it('auth.environment matches a key under auth.providers.github', () => {
+    // The frontend sends auth.environment as `?env=...` on the OAuth
+    // start request (DefaultAuthConnector.buildUrl) - a mismatch means
+    // that request never matches a configured provider block.
+    expect(Object.keys(config.auth.providers.github)).toContain(
+      config.auth.environment,
+    );
+  });
 });
 
 describe('merged dev config keeps guest sign-in for local development', () => {
@@ -147,5 +160,9 @@ describe('merged dev config keeps guest sign-in for local development', () => {
 
   it('has no GitHub provider configured by default (stays inert locally)', () => {
     expect(devConfig.auth.providers.github).toBeUndefined();
+  });
+
+  it('marks auth.environment as development so the frontend offers Guest too', () => {
+    expect(devConfig.auth.environment).toBe('development');
   });
 });
