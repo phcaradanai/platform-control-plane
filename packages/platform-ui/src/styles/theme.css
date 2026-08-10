@@ -1,9 +1,19 @@
 /*
  * Semantic design tokens.
  *
- * Every token is consumed through UnoCSS theme colours (see uno.config.ts),
+ * Every token is consumed through UnoCSS theme colours (see uno-preset.ts),
  * so component code writes `bg-card text-muted-foreground` and never a
  * `dark:` variant. Switching `data-theme` on <html> reskins the whole app.
+ *
+ * Colour tokens are stored as space-separated RGB channels ("R G B", no
+ * `rgb()` wrapper) rather than hex. `uno-preset.ts` wraps each one as
+ * `rgb(var(--color-x) / <alpha-value>)`, which is what lets opacity
+ * modifiers (`bg-primary/10`, `border-border/60`) resolve to a real
+ * translucent colour instead of silently collapsing to the opaque
+ * default - a hex or bare-`var()` token can't be alpha-sliced this way.
+ * Any raw (non-Uno-utility) consumer of these tokens must use the same
+ * `rgb(var(--color-x) / <alpha>)` form, not `var(--color-x)` directly -
+ * see this file's own `.skip-link` and `:focus-visible` rules below.
  *
  * Contrast: every foreground/background pair below meets WCAG AA (>= 4.5:1
  * for body text, >= 3:1 for large text and UI borders) in both themes.
@@ -16,69 +26,69 @@
     'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
 
-  --color-background: #ffffff;
-  --color-foreground: #0f172a;
+  --color-background: 255 255 255;
+  --color-foreground: 15 23 42;
 
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
+  --color-card: 255 255 255;
+  --color-card-foreground: 15 23 42;
 
-  --color-primary: #1d4ed8;
-  --color-primary-foreground: #f8fafc;
+  --color-primary: 29 78 216;
+  --color-primary-foreground: 248 250 252;
 
-  --color-secondary: #e2e8f0;
-  --color-secondary-foreground: #0f172a;
+  --color-secondary: 226 232 240;
+  --color-secondary-foreground: 15 23 42;
 
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #52627c;
+  --color-muted: 241 245 249;
+  --color-muted-foreground: 82 98 124;
 
-  --color-accent: #eef2ff;
-  --color-accent-foreground: #1e293b;
+  --color-accent: 238 242 255;
+  --color-accent-foreground: 30 41 59;
 
-  --color-destructive: #b91c1c;
-  --color-destructive-foreground: #fef2f2;
+  --color-destructive: 185 28 28;
+  --color-destructive-foreground: 254 242 242;
 
-  --color-success: #15803d;
-  --color-success-foreground: #f0fdf4;
+  --color-success: 21 128 61;
+  --color-success-foreground: 240 253 244;
 
-  --color-warning: #a16207;
-  --color-warning-foreground: #fffbeb;
+  --color-warning: 161 98 7;
+  --color-warning-foreground: 255 251 235;
 
-  --color-border: #cbd5e1;
-  --color-ring: #1d4ed8;
+  --color-border: 203 213 225;
+  --color-ring: 29 78 216;
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --color-background: #0b1120;
-  --color-foreground: #e2e8f0;
+  --color-background: 11 17 32;
+  --color-foreground: 226 232 240;
 
-  --color-card: #111c31;
-  --color-card-foreground: #e2e8f0;
+  --color-card: 17 28 49;
+  --color-card-foreground: 226 232 240;
 
-  --color-primary: #93b4fd;
-  --color-primary-foreground: #0b1120;
+  --color-primary: 147 180 253;
+  --color-primary-foreground: 11 17 32;
 
-  --color-secondary: #1e293b;
-  --color-secondary-foreground: #e2e8f0;
+  --color-secondary: 30 41 59;
+  --color-secondary-foreground: 226 232 240;
 
-  --color-muted: #172033;
-  --color-muted-foreground: #a3b1c6;
+  --color-muted: 23 32 51;
+  --color-muted-foreground: 163 177 198;
 
-  --color-accent: #1e293b;
-  --color-accent-foreground: #e2e8f0;
+  --color-accent: 30 41 59;
+  --color-accent-foreground: 226 232 240;
 
-  --color-destructive: #fca5a5;
-  --color-destructive-foreground: #450a0a;
+  --color-destructive: 252 165 165;
+  --color-destructive-foreground: 69 10 10;
 
-  --color-success: #86efac;
-  --color-success-foreground: #052e16;
+  --color-success: 134 239 172;
+  --color-success-foreground: 5 46 22;
 
-  --color-warning: #fcd34d;
-  --color-warning-foreground: #451a03;
+  --color-warning: 252 211 77;
+  --color-warning-foreground: 69 26 3;
 
-  --color-border: #2b3a55;
-  --color-ring: #93b4fd;
+  --color-border: 43 58 85;
+  --color-ring: 147 180 253;
 }
 
 html,
@@ -94,7 +104,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-ring);
+  outline: 2px solid rgb(var(--color-ring));
   outline-offset: 2px;
 }
 
@@ -105,8 +115,8 @@ body {
   top: -3rem;
   z-index: 100;
   border-radius: 0.375rem;
-  background-color: var(--color-primary);
-  color: var(--color-primary-foreground);
+  background-color: rgb(var(--color-primary));
+  color: rgb(var(--color-primary-foreground));
   padding: 0.5rem 1rem;
   transition: top 150ms ease;
 }

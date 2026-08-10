@@ -85,6 +85,8 @@ starts both processes and runs the Catalog/Create smoke tests).
   setup (env vars, PostgreSQL, troubleshooting)
 - [`docs/app-template.md`](docs/app-template.md) — what the template
   generates
+- [`docs/frontend-standards.md`](docs/frontend-standards.md) — the
+  frontend design/UX standard every generated application starts from
 - [`docs/catalog-model.md`](docs/catalog-model.md) — catalog entities
 - [`docs/github-integration.md`](docs/github-integration.md) — GitHub token
   / integration setup

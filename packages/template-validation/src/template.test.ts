@@ -311,8 +311,12 @@ describe('platform-mfe-app skeleton', () => {
     expect(uno).toContain('platformUnoShortcuts');
     expect(uno).toContain('platformUnoPreflights');
     // UnoCSS must scan the package dist so utilities used inside the
-    // primitives are generated in the app bundle.
-    expect(uno).toContain('node_modules/@platform/ui/dist/**/*.js');
+    // primitives are generated in the app bundle. This is a package-owned
+    // fix (platformUnoContent, see uno-preset.ts's doc comment) rather
+    // than a literal glob duplicated into every app's uno.config.ts, so
+    // the skeleton only needs to consume it.
+    expect(uno).toContain('platformUnoContent');
+    expect(uno).toContain('content: platformUnoContent()');
   });
 
   it('loads design tokens explicitly from the package stylesheet', () => {

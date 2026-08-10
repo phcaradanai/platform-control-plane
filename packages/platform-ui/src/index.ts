@@ -27,11 +27,15 @@ export { QueryBoundary } from './components/feedback/query-boundary.js';
 export type { QueryBoundaryProps } from './components/feedback/query-boundary.js';
 
 // UI primitives (Radix-based)
+export { Avatar } from './components/ui/avatar.js';
+export type { AvatarProps } from './components/ui/avatar.js';
 export { Badge } from './components/ui/badge.js';
 export { Button } from './components/ui/button.js';
 export type { ButtonProps } from './components/ui/button.js';
 export { Card } from './components/ui/card.js';
 export { Checkbox } from './components/ui/checkbox.js';
+export { ConfirmDialog } from './components/ui/confirm-dialog.js';
+export type { ConfirmDialogProps } from './components/ui/confirm-dialog.js';
 export {
   Dialog,
   DialogTrigger,
@@ -56,6 +60,15 @@ export {
   SelectContent,
   SelectItem,
 } from './components/ui/select.js';
+export {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+  SheetClose,
+} from './components/ui/sheet.js';
+export type { SheetContentProps, SheetSide } from './components/ui/sheet.js';
 export { Skeleton } from './components/ui/skeleton.js';
 export { Spinner } from './components/ui/spinner.js';
 export { Switch } from './components/ui/switch.js';
