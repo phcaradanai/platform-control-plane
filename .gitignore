@@ -11,6 +11,11 @@ yarn-error.log*
 # Coverage directory generated when running tests with coverage
 coverage
 
+# Local App Factory output - not a workspace, not part of this repo's
+# packages/plugins; see generated/workspace-hub for the SaaS Foundation
+# Validation exercise.
+generated/
+
 # Dependencies
 node_modules/
 
