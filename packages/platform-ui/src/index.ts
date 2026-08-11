@@ -15,7 +15,10 @@ export { cn } from './lib/cn.js';
 
 // Theme (light/dark/system)
 export { ThemeProvider, useTheme } from './components/theme/theme-provider.js';
-export type { Theme, ThemePreference } from './components/theme/theme-provider.js';
+export type {
+  Theme,
+  ThemePreference,
+} from './components/theme/theme-provider.js';
 export { ThemeToggle } from './components/theme/theme-toggle.js';
 
 // Feedback states + query boundary
@@ -44,6 +47,7 @@ export {
   DialogDescription,
   DialogClose,
 } from './components/ui/dialog.js';
+export type { DialogContentProps } from './components/ui/dialog.js';
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -72,6 +76,16 @@ export type { SheetContentProps, SheetSide } from './components/ui/sheet.js';
 export { Skeleton } from './components/ui/skeleton.js';
 export { Spinner } from './components/ui/spinner.js';
 export { Switch } from './components/ui/switch.js';
-export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs.js';
+export {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from './components/ui/tabs.js';
 export { ToastProvider, useToast } from './components/ui/toast.js';
-export { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './components/ui/tooltip.js';
+export {
+  TooltipProvider,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from './components/ui/tooltip.js';

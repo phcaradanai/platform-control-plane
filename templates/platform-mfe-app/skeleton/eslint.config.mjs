@@ -46,17 +46,12 @@ export default tseslint.config(
       'react-refresh/only-export-components': 'off',
     },
   },
-  // Radix re-export primitives (src/components/ui), files that pair a
-  // component with a hook (theme-provider, toast), and composed capability
-  // modules (src/capabilities/**, same provider+hook shape - see
-  // docs/capabilities.md) are library-style modules where the fast-refresh
-  // rule produces only noise.
+  // Composed capability modules (src/capabilities/**, same provider+hook
+  // shape - see docs/capabilities.md) are library-style modules where the
+  // fast-refresh rule produces only noise. Shared UI and theme code lives in
+  // the vendored @platform/ui package.
   {
-    files: [
-      'src/components/ui/**',
-      'src/components/theme/theme-provider.tsx',
-      'src/capabilities/**',
-    ],
+    files: ['src/capabilities/**'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

@@ -15,7 +15,7 @@ function Probe() {
   );
 }
 
-describe('ThemeProvider', () => {
+describe('shared ThemeProvider', () => {
   it('defaults to system and applies light in jsdom', () => {
     render(
       <ThemeProvider>

@@ -15,15 +15,19 @@ export type SheetSide = 'left' | 'right' | 'top' | 'bottom';
 
 const sideClasses: Record<SheetSide, string> = {
   left: 'inset-y-0 left-0 h-dvh w-full max-w-xs border-r data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left',
-  right: 'inset-y-0 right-0 h-dvh w-full max-w-xs border-l data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right',
+  right:
+    'inset-y-0 right-0 h-dvh w-full max-w-xs border-l data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right',
   top: 'inset-x-0 top-0 w-full max-h-[80vh] border-b data-[state=open]:slide-in-from-top data-[state=closed]:slide-out-to-top',
-  bottom: 'inset-x-0 bottom-0 w-full max-h-[80vh] border-t data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
+  bottom:
+    'inset-x-0 bottom-0 w-full max-h-[80vh] border-t data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
 };
 
 export interface SheetContentProps
   extends ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
   /** Which edge of the viewport the panel slides in from. Default `left`. */
   side?: SheetSide;
+  /** Accessible label for the built-in dismiss button. Localize at the app boundary. */
+  closeLabel: string;
 }
 
 /**
@@ -40,7 +44,7 @@ export interface SheetContentProps
 export const SheetContent = forwardRef<
   ElementRef<typeof DialogPrimitive.Content>,
   SheetContentProps
->(({ className, side = 'left', children, ...props }, ref) => (
+>(({ className, side = 'left', children, closeLabel, ...props }, ref) => (
   <DialogPrimitive.Portal>
     <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=open]:fade-in" />
     <DialogPrimitive.Content
@@ -54,9 +58,13 @@ export const SheetContent = forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <DialogPrimitive.Close
+        type="button"
+        aria-label={closeLabel}
+        className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
         <X className="size-4" aria-hidden="true" />
-        <span className="sr-only">Close</span>
+        <span className="sr-only">{closeLabel}</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPrimitive.Portal>

@@ -51,9 +51,9 @@ describe('platform-mfe-app template.yaml', () => {
   });
 
   it('is a valid Template entity', async () => {
-    await expect(
-      templateEntityV1beta3Validator.check(template),
-    ).resolves.toBe(true);
+    await expect(templateEntityV1beta3Validator.check(template)).resolves.toBe(
+      true,
+    );
   });
 
   it('requires the application identity, repository, and metadata fields', () => {
@@ -274,6 +274,7 @@ describe('platform-mfe-app skeleton', () => {
     for (const file of [
       'src/components/ui/button.tsx',
       'src/components/theme/theme-provider.tsx',
+      'src/components/theme/theme-provider.test.tsx',
       'src/components/feedback/query-boundary.tsx',
       'src/lib/cn.ts',
       'src/styles/theme.css',
@@ -288,6 +289,29 @@ describe('platform-mfe-app skeleton', () => {
     ]) {
       expect(fs.existsSync(path.join(skeletonDir, file))).toBe(true);
     }
+    expect(fs.existsSync(path.join(skeletonDir, 'src/components/theme'))).toBe(
+      false,
+    );
+  });
+
+  it('ships focused behavior coverage for the shared Phase 5.5A primitives', () => {
+    const primitiveTest = fs.readFileSync(
+      path.join(skeletonDir, 'src/platform-ui/primitive-behavior.test.tsx'),
+      'utf8',
+    );
+    expect(primitiveTest).toContain('Sheet');
+    expect(primitiveTest).toContain('ConfirmDialog');
+    expect(primitiveTest).toContain('Avatar');
+    expect(primitiveTest).toContain('Escape');
+  });
+
+  it('documents the shared UI and theme boundary in the generated README', () => {
+    const readme = fs.readFileSync(path.join(skeletonDir, 'README.md'), 'utf8');
+    expect(readme).toContain('@platform/ui');
+    expect(readme).toContain('does not recreate local UI wrappers');
+    expect(readme).not.toContain('src/components/ui/');
+    expect(readme).toContain('do not add src/styles/theme.css');
+    expect(readme).not.toContain('src/components/theme/');
   });
 
   it('ships a component catalog route for visual verification', () => {
@@ -306,7 +330,7 @@ describe('platform-mfe-app skeleton', () => {
       path.join(skeletonDir, 'uno.config.ts'),
       'utf8',
     );
-    expect(uno).toContain("@platform/ui/uno-preset");
+    expect(uno).toContain('@platform/ui/uno-preset');
     expect(uno).toContain('platformUnoTheme');
     expect(uno).toContain('platformUnoShortcuts');
     expect(uno).toContain('platformUnoPreflights');
@@ -320,11 +344,12 @@ describe('platform-mfe-app skeleton', () => {
   });
 
   it('loads design tokens explicitly from the package stylesheet', () => {
-    const main = fs.readFileSync(path.join(skeletonDir, 'src/main.tsx'), 'utf8');
-    expect(main).toContain("@platform/ui/theme.css");
-    expect(
-      fs.existsSync(path.join(skeletonDir, 'src/styles')),
-    ).toBe(false);
+    const main = fs.readFileSync(
+      path.join(skeletonDir, 'src/main.tsx'),
+      'utf8',
+    );
+    expect(main).toContain('@platform/ui/theme.css');
+    expect(fs.existsSync(path.join(skeletonDir, 'src/styles'))).toBe(false);
   });
 
   it('runs a frozen, deterministic install in generated CI', () => {
@@ -365,7 +390,9 @@ describe('platform-mfe-app skeleton', () => {
         // Files copied verbatim (e.g. GitHub Actions workflows) legitimately
         // keep their own `${{ ... }}` expressions - those aren't scaffolder
         // expressions and are covered by the byte-identical check below.
-        if (copyWithoutTemplatingPrefixes.some(prefix => file.startsWith(prefix))) {
+        if (
+          copyWithoutTemplatingPrefixes.some(prefix => file.startsWith(prefix))
+        ) {
           continue;
         }
         expect({ file, hasUnresolved: content.includes('${{') }).toEqual({
@@ -423,9 +450,7 @@ describe('platform-mfe-app skeleton', () => {
       expect(() => JSON.parse(rendered.get('package.json')!)).not.toThrow();
       const pkg = JSON.parse(rendered.get('package.json')!);
       expect(pkg.name).toBe(SAMPLE_VALUES.name);
-      expect(fs.existsSync(path.join(skeletonDir, 'tsconfig.json'))).toBe(
-        true,
-      );
+      expect(fs.existsSync(path.join(skeletonDir, 'tsconfig.json'))).toBe(true);
     });
 
     it('renders package-lock.json with the generated app name', () => {

@@ -58,7 +58,9 @@ function ComponentsPage() {
   return (
     <div className="space-y-10">
       <section className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Platform UI catalog</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Platform UI catalog
+        </h1>
         <p className="text-muted-foreground">
           Every primitive exported by <code>@platform/ui</code>. Switch the
           theme to verify both token sets.
@@ -74,7 +76,9 @@ function ComponentsPage() {
           <Button variant="destructive">Destructive</Button>
           <Button size="sm">Small</Button>
           <Button size="lg">Large</Button>
-          <Button size="icon" aria-label="Icon button">★</Button>
+          <Button size="icon" aria-label="Icon button">
+            ★
+          </Button>
         </div>
       </PrimitiveSection>
 
@@ -110,7 +114,10 @@ function ComponentsPage() {
         </div>
       </PrimitiveSection>
 
-      <PrimitiveSection title="Checkbox + Switch" description="Selection controls">
+      <PrimitiveSection
+        title="Checkbox + Switch"
+        description="Selection controls"
+      >
         <div className="flex flex-wrap items-center gap-8">
           <div className="flex items-center gap-2">
             <Checkbox id="catalog-check" />
@@ -156,7 +163,7 @@ function ComponentsPage() {
           <DialogTrigger asChild>
             <Button variant="outline">Open dialog</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent closeLabel="Close dialog">
             <DialogTitle>Dialog title</DialogTitle>
             <DialogDescription>
               A Radix-based accessible modal with focus trap.
@@ -170,7 +177,10 @@ function ComponentsPage() {
         </Dialog>
       </PrimitiveSection>
 
-      <PrimitiveSection title="Avatar" description="Person/entity identity, with initials fallback">
+      <PrimitiveSection
+        title="Avatar"
+        description="Person/entity identity, with initials fallback"
+      >
         <div className="flex flex-wrap items-center gap-4">
           <Avatar name="Ada Lovelace" size="sm" />
           <Avatar name="Grace Hopper" />
@@ -178,23 +188,33 @@ function ComponentsPage() {
         </div>
       </PrimitiveSection>
 
-      <PrimitiveSection title="ConfirmDialog" description="Confirm/cancel wrapper for destructive or consequential actions">
+      <PrimitiveSection
+        title="ConfirmDialog"
+        description="Confirm/cancel wrapper for destructive or consequential actions"
+      >
         <ConfirmDialog
           trigger={<Button variant="destructive">Delete item</Button>}
           title="Delete this item?"
           description="This cannot be undone."
           confirmLabel="Delete"
+          cancelLabel="Cancel"
+          pendingLabel="Deleting…"
+          closeLabel="Close dialog"
           destructive
           onConfirm={() => {}}
+          onConfirmError={() => {}}
         />
       </PrimitiveSection>
 
-      <PrimitiveSection title="Sheet" description="Off-canvas panel anchored to a viewport edge">
+      <PrimitiveSection
+        title="Sheet"
+        description="Off-canvas panel anchored to a viewport edge"
+      >
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline">Open sheet</Button>
           </SheetTrigger>
-          <SheetContent side="left">
+          <SheetContent side="left" closeLabel="Close sheet">
             <SheetTitle>Sheet title</SheetTitle>
             <SheetDescription>
               An off-canvas panel for navigation, filters, or detail views -
@@ -271,7 +291,9 @@ function PrimitiveSection({
         <h2 className="text-xl font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
-      <div className="rounded-lg border border-border bg-card p-4">{children}</div>
+      <div className="rounded-lg border border-border bg-card p-4">
+        {children}
+      </div>
     </section>
   );
 }

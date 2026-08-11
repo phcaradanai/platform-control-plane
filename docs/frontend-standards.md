@@ -17,14 +17,14 @@ point.
 
 Three tiers, in order of how broadly a concern should live:
 
-| Tier | Lives in | Examples |
-| --- | --- | --- |
-| **Platform standard** | `@platform/ui` (tokens, primitives, UnoCSS preset) | colors, spacing/radius/shadow scale, `Button`, `Dialog`, `Sheet`, feedback states, focus/keyboard behavior |
-| **Reusable application pattern** | Documented here; implemented per app from platform primitives | responsive sidebar nav + mobile drawer, filter/search/sort table conventions, dashboard stat display |
-| **Product-specific** | The generated application's own `src/` | nav item content, domain data tables, product-specific dialogs and forms, dashboards' actual metrics |
+| Tier                             | Lives in                                                      | Examples                                                                                                   |
+| -------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Platform standard**            | `@platform/ui` (tokens, primitives, UnoCSS preset)            | colors, spacing/radius/shadow scale, `Button`, `Dialog`, `Sheet`, feedback states, focus/keyboard behavior |
+| **Reusable application pattern** | Documented here; implemented per app from platform primitives | responsive sidebar nav + mobile drawer, filter/search/sort table conventions, dashboard stat display       |
+| **Product-specific**             | The generated application's own `src/`                        | nav item content, domain data tables, product-specific dialogs and forms, dashboards' actual metrics       |
 
 A concern is promoted to `@platform/ui` only when it is genuinely
-product-agnostic (works unchanged across unrelated applications) *and*
+product-agnostic (works unchanged across unrelated applications) _and_
 either (a) requires non-obvious accessible/interaction behavior a developer
 shouldn't have to re-derive (focus trap, portal, animation direction), or
 (b) is explicitly called for by this document. Everything else stays a
@@ -59,7 +59,7 @@ per-component `#hex` or raw Tailwind color utility.
 
 These come from `presetWind3` (UnoCSS's Tailwind-compatible preset)
 unmodified - its default scale (`p-4`, `rounded-md`, `shadow-sm`,
-`duration-150`, `sm:`/`md:`/`lg:`/`xl:`/`2xl:` breakpoints) *is* the
+`duration-150`, `sm:`/`md:`/`lg:`/`xl:`/`2xl:` breakpoints) _is_ the
 platform standard. There is deliberately no parallel token layer
 duplicating it: introducing one would be a second styling system for no
 behavioral gain. Conventions to follow rather than new tokens to add:
@@ -108,7 +108,7 @@ and detail panels.
   arrives.
 - **Pending/disabled**: form controls and buttons use the native
   `disabled` attribute plus `disabled:opacity-50
-  disabled:pointer-events-none` (already in the `btn`/`input` shortcuts) -
+disabled:pointer-events-none` (already in the `btn`/`input` shortcuts) -
   don't hide a pending control, disable it so its position and focus
   target stay stable.
 - **Empty / error / not-found**: `EmptyState` / `ErrorState` /
@@ -121,8 +121,10 @@ and detail panels.
 - **Confirmation / destructive actions**: `ConfirmDialog` for any
   irreversible or consequential action. Set `destructive` to use the
   destructive button variant; it manages its own pending/open state so
-  callers don't re-implement "disable both buttons while in flight, close
-  on success."
+  callers don't re-implement the in-flight sequence. Pass localized
+  confirmLabel, cancelLabel, pendingLabel, and closeLabel values. When
+  onConfirm rejects, the dialog stays open, pending state resets, and
+  onConfirmError owns the product-level error surface and recovery choice.
 - **Form validation**: Zod schema + React Hook Form (see the skeleton's
   `features/form-demo/`) - validate on submit and surface errors next to
   the field, not only in a toast.
@@ -162,7 +164,7 @@ should compose `QueryBoundary` for its loading/empty/error states rather
 than hand-rolling a fetch-state switch - this is the single most
 duplicated piece of infrastructure across product code today.
 Presentation (which columns, what a row means, what "empty" should say)
-stays product-specific; the request/loading/error/pagination *shape*
+stays product-specific; the request/loading/error/pagination _shape_
 should not vary app to app.
 
 ## Accessibility
@@ -182,7 +184,10 @@ Platform defaults, not per-project polish:
   of visual-only headings. `Avatar` always exposes an accessible name
   (image `alt` or fallback `aria-label`, both set to the `name` prop) -
   never mark an avatar `aria-hidden` in a context where it's the only
-  visual indicator of *who*.
+  visual indicator of _who_.
+- **Localized dismiss actions**: DialogContent and SheetContent require an
+  accessible close label from the application. Shared primitives do not
+  invent product copy; pass labels from the app's i18n boundary.
 - **Reduced motion**: handled globally (`prefers-reduced-motion: reduce`
   in `theme.css`); component-level animation classes don't need their own
   guard.
@@ -235,3 +240,17 @@ closure report) - there is no CI job yet that runs it automatically on a
 - **No second styling system.** Spacing/radius/shadow/motion/breakpoints
   stay on presetWind3's default scale; only color got a dedicated token
   layer, because color is the one axis that must be theme-swappable.
+
+## Generated application boundary
+
+Generated applications consume the vendored @platform/ui package and its
+theme.css and uno-preset exports. They should import shared primitives,
+feedback states, ThemeProvider, ThemeToggle, cn, and semantic styling from
+that package.
+
+The application owns layout, routes, features, capability composition, and
+product-specific content. It must not recreate src/components/ui,
+src/components/theme/theme-provider, or src/styles/theme.css, and it must
+not copy Radix wrappers or token definitions into a local layer. If a
+cross-product behavior is missing, raise it as a platform primitive
+proposal rather than quietly forking the generated foundation.
