@@ -25,6 +25,9 @@ A production-ready React frontend boilerplate:
   states, ThemeProvider, ThemeToggle, and the cn utility are imported from
   the vendored @platform/ui package. Product code consumes these exports;
   it does not recreate local UI wrappers.
+- **Standard application patterns** — the shell, page framing, data tables,
+  form sections, settings layout, and feedback states come from
+  `@platform/ui` and are composed by generated screens.
 - **UnoCSS + semantic CSS variables** — theme-aware utility classes from
   @platform/ui/uno-preset and @platform/ui/theme.css. Use semantic tokens
   and the shared preset; do not add src/styles/theme.css or a second token
@@ -90,7 +93,14 @@ Requested capabilities (recorded in `platform-app.json`):
 
 ${{ values.capabilities | dump }}
 
+{% set featurePacks = ['dashboard', 'settings'] %}
 {% set composedCapabilities = ['notifications', 'i18n', 'observability'] %}
+The following **frontend feature packs** are composed — each adds a working
+route, shell navigation entry, standard-pattern screen, interactions, and
+focused tests (see `docs/feature-packs.md` in the platform repository):
+
+{% for capability in values.capabilities %}{% if capability in featurePacks %}- **${{ capability }}** — route `/${{ capability }}` (see `src/feature-packs/${{ capability }}/`)
+{% endif %}{% endfor %}
 Of these, the following are **composed** — wired into this application's
 code, not just recorded (see `docs/capabilities.md` in the
 `platform-control-plane` App Factory repo for the composition model):
@@ -100,16 +110,17 @@ code, not just recorded (see `docs/capabilities.md` in the
 The following are recorded in `platform-app.json` for a later composition
 phase but are not yet installed or configured:
 
-{% for capability in values.capabilities %}{% if not (capability in composedCapabilities) %}- ${{ capability }}
+{% for capability in values.capabilities %}{% if not (capability in composedCapabilities) and not (capability in featurePacks) %}- ${{ capability }}
 {% endif %}{% endfor %}
 
 ## What is a placeholder
 
 - `platform-app.json` `runtime.status` is `not-configured` — no Module
   Federation host/remote wiring exists yet.
-- Requested capabilities outside `notifications` / `i18n` / `observability`
-  are recorded only — nothing beyond `platform-app.json` reflects them yet.
-  They exist so a later composition phase knows what to add.
+- Requested capabilities outside the composed platform capabilities and
+  `dashboard` / `settings` are recorded only — nothing beyond
+  `platform-app.json` reflects them yet. They exist so a later composition
+  phase knows what to add.
 - The health endpoint (`/health` under `VITE_API_BASE_URL`) is an example
   of the API boundary, not a real backend — no server is generated.
 - There is no deployment configuration.
@@ -121,8 +132,9 @@ src/
   api/            typed API boundary (client, types, domain endpoints)
   capabilities/   composed capability modules (present only for requested,
                    composed capabilities - see "Selected capabilities" above)
+  feature-packs/  selected frontend feature packs with screens and tests
   components/
-    layout/       app shell, header, footer
+    layout/       app shell composed from @platform/ui
     feedback/     runtime-specific fallback UI
   platform-ui/    integration tests for the shared @platform/ui contract
   features/       feature modules (health, table demo, form demo)
@@ -137,5 +149,5 @@ e2e/              Playwright smoke specs
 Runtime Module Federation loading, the Super App shell, full
 authentication/RBAC enforcement, and deployment are out of scope for this
 generated foundation and are planned for a later App Factory phase. See
-docs/capabilities.md in `platform-control-plane` for which capabilities are
-composed today versus still only recorded.
+docs/feature-packs.md and docs/capabilities.md in `platform-control-plane` for
+which selections are composed today versus still only recorded.

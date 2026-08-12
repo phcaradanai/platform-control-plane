@@ -1,9 +1,10 @@
 # Capability composition
 
-Phase 4 turns a small, representative set of the App Factory's curated
-capability selections into real, generated application code instead of
-metadata-only declarations. This document is the capability contract: what
-"composed" means, which capabilities are composed today, how the mechanism
+Phase 4 established the App Factory's deterministic capability composition
+path. Phase 5.5B2 extends that same path with frontend Feature Packs; see
+[feature-packs.md](./feature-packs.md) for the route/screen contract. This
+document remains the infrastructure capability contract: what "composed"
+means, which platform integrations are composed today, how the mechanism
 works, and how to add another one.
 
 See [ADR 0004](./adr/0004-capability-composition.md) for the design
@@ -12,20 +13,26 @@ rationale and the alternatives that were ruled out.
 ## Composed vs recorded-only
 
 `templates/platform-mfe-app/template.yaml`'s `capabilities` field is a
-closed, 13-item enum (see [app-template.md](./app-template.md)). Every
+closed, 14-item enum (see [app-template.md](./app-template.md)). Every
 selection is recorded in the generated `platform-app.json`, unchanged from
 earlier phases. As of Phase 4, three of the thirteen are additionally
 **composed** - they deterministically add real files, wiring, and (gated)
 UI to the generated application:
 
-| Capability | Status | Composed effect |
-| --- | --- | --- |
-| `notifications` | **Composed** | `src/capabilities/notifications/` - a header bell menu with demo notifications and a "send test notification" button that fires a toast through `@platform/ui`'s existing `ToastProvider`. |
-| `i18n` | **Composed** | `src/capabilities/i18n/` - an `I18nProvider`/`useI18n()` context (2 locales) and a header `LanguageSwitcher`. |
-| `observability` | **Composed** | `src/capabilities/observability/` - `window.onerror`/`unhandledrejection` capture plus a `trackEvent()`/sink API, initialized in `main.tsx`. |
-| `authentication`, `rbac`, `dashboard`, `reports`, `history`, `audit-log`, `tenant`, `theme`, `desktop-ready`, `mobile-ready` | Recorded only | Present in `platform-app.json.capabilities`; no generated code yet. Deferred to a later composition phase - most require infrastructure explicitly out of scope for this phase (a real IdP for `authentication`/`rbac`, a tenant backend for `tenant`, Module Federation/Super App runtime for `desktop-ready`/`mobile-ready`). |
+| Capability                                                                                                      | Status        | Composed effect                                                                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `notifications`                                                                                                 | **Composed**  | `src/capabilities/notifications/` - a header bell menu with demo notifications and a "send test notification" button that fires a toast through `@platform/ui`'s existing `ToastProvider`.                                                                                                             |
+| `i18n`                                                                                                          | **Composed**  | `src/capabilities/i18n/` - an `I18nProvider`/`useI18n()` context (2 locales) and a header `LanguageSwitcher`.                                                                                                                                                                                          |
+| `observability`                                                                                                 | **Composed**  | `src/capabilities/observability/` - `window.onerror`/`unhandledrejection` capture plus a `trackEvent()`/sink API, initialized in `main.tsx`.                                                                                                                                                           |
+| `authentication`, `rbac`, `reports`, `history`, `audit-log`, `tenant`, `theme`, `desktop-ready`, `mobile-ready` | Recorded only | Present in `platform-app.json.capabilities`; no generated code yet. Deferred to later phases - most require infrastructure explicitly out of scope (a real IdP for `authentication`/`rbac`, a tenant backend for `tenant`, or Module Federation/Super App runtime for `desktop-ready`/`mobile-ready`). |
 
-`theme` is not composed as a *toggle* because it isn't optional: every
+The `dashboard` and `settings` selections are frontend Feature Packs rather
+than infrastructure capabilities. They compose routes, shell navigation,
+pattern-based screens, interactions, and tests through the same mechanism;
+their contract and pruning rules are documented in
+[feature-packs.md](./feature-packs.md).
+
+`theme` is not composed as a _toggle_ because it isn't optional: every
 generated app already ships `@platform/ui`'s `ThemeProvider` unconditionally
 (light/dark/system, present before this phase). Composing it would mean
 making it removable, which isn't the goal - selecting it is a no-op
@@ -56,6 +63,7 @@ Keycloak, a tenant backend, desktop/mobile shells).
 1. **Extension points, not scattered conditionals.** Exactly three base
    files own the wiring, each with a short comment pointing at the owning
    capability:
+
    - `src/app.tsx` - mounts `I18nProvider` (`i18n`).
    - `src/main.tsx` - calls `initObservability()` (`observability`).
    - `src/components/layout/header.tsx` - renders `LanguageSwitcher`
@@ -72,7 +80,7 @@ Keycloak, a tenant backend, desktop/mobile shells).
    extension-point files add plain nunjucks block tags -
    `{% if 'i18n' in values.capabilities %} ... {% endif %}` - around the
    import and the JSX/call site for each composed capability. Backstage's
-   `SecureTemplater` only reconfigures nunjucks's *variable* delimiters to
+   `SecureTemplater` only reconfigures nunjucks's _variable_ delimiters to
    `${{ }}`; block tags (`{% %}`) keep their nunjucks defaults, so this
    works against the real scaffolder backend, not just the hermetic test
    harness. The result: a generated app's `app.tsx`/`main.tsx`/`header.tsx`
@@ -107,14 +115,13 @@ Keycloak, a tenant backend, desktop/mobile shells).
    `packages/template-validation/src/capabilityComposition.test.ts`'s
    dangling-import check.
 
-4. **No new top-level routes.** `src/routeTree.gen.ts` is committed
-   (TanStack Router's generated route manifest, needed so `npm run
-   typecheck` works before a build regenerates it - see
-   app-template.md). A composed capability that added or removed a routed
-   page would need a capability-specific `routeTree.gen.ts` per selection
-   combination, which isn't statically representable. All three composed
-   capabilities therefore integrate into always-present routes/layout
-   instead of adding routes of their own.
+4. **Feature packs may add routes through the same templated route tree.**
+   `src/routeTree.gen.ts` is committed (TanStack Router's generated route
+   manifest, needed so `npm run typecheck` works before a build regenerates it
+   - see app-template.md). The feature-pack route imports and route types are
+     guarded by the same Nunjucks selection blocks and the pack's route module
+     is pruned when unselected. Infrastructure capabilities continue to mount
+     into documented always-present extension points.
 
 ## Determinism and safety
 
@@ -134,7 +141,7 @@ Keycloak, a tenant backend, desktop/mobile shells).
   the first line of defense at the form/task-submission layer. The
   composition layer itself doesn't additionally trust that: an unknown id
   or a duplicate reaching `pruneCapabilities`' `if:` check (`each.value in
-  parameters.capabilities`) simply evaluates to a normal true/false with no
+parameters.capabilities`) simply evaluates to a normal true/false with no
   special-casing required - an unknown id never matches any `each.value`
   and has no effect, and a duplicate is idempotent. This is exercised
   directly in `capabilityComposition.test.ts` rather than only argued in

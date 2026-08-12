@@ -8,10 +8,10 @@ metadata:
     Creates a GitHub repository for a new Platform MFE Application from a
     controlled skeleton and registers it in the Software Catalog. Runtime
     module federation and deployment are added in a later phase. A small,
-    representative set of capabilities (notifications, i18n, observability)
-    is composed into the generated application's code today - see
-    docs/capabilities.md; the remaining curated capabilities are still only
-    recorded in platform-app.json for that later phase.
+    representative set of frontend feature packs (dashboard and settings)
+    plus platform capabilities (notifications, i18n, observability) is
+    composed into the generated application's code today - see
+    docs/feature-packs.md and docs/capabilities.md.
 spec:
   owner: group:default/platform-team
   type: service
@@ -104,17 +104,19 @@ spec:
           title: Requested capabilities
           type: array
           description: >-
-            Curated platform capabilities to request for this application.
-            All selections are recorded in platform-app.json.
-            notifications, i18n, and observability are additionally composed
-            into the generated application's code (see docs/capabilities.md);
-            the rest remain requests for a later composition phase.
+            Curated platform capabilities and frontend feature packs to
+            request for this application. All selections are recorded in
+            platform-app.json. dashboard and settings compose real routes,
+            navigation, screens, and tests; notifications, i18n, and
+            observability compose platform integrations. The remaining
+            selections remain recorded for later phases.
           items:
             type: string
             enum:
               - authentication
               - rbac
               - dashboard
+              - settings
               - reports
               - history
               - audit-log
@@ -173,6 +175,19 @@ spec:
       input:
         files:
           - src/capabilities/${{ each.value }}/**
+
+    # Feature packs use the same deterministic render-and-prune mechanism,
+    # but own both a routed screen and its route entry. Removing both keeps
+    # unselected packs out of generated imports, route types, and navigation.
+    - id: pruneFeaturePacks
+      name: Remove Unselected Feature Packs
+      action: fs:delete
+      each: ['dashboard', 'settings']
+      if: ${{ not (each.value in parameters.capabilities) }}
+      input:
+        files:
+          - src/feature-packs/${{ each.value }}/**
+          - src/routes/${{ each.value }}.tsx
 
     - id: publish
       name: Publish to GitHub

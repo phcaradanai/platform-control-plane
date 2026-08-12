@@ -7,14 +7,14 @@ Application** scaffolder template, registered in the catalog at
 
 ## Form fields
 
-| Section | Field | Notes |
-| --- | --- | --- |
+| Section              | Field                                   | Notes                                                                                                                |
+| -------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Application identity | `name`, `title`, `description`, `owner` | `name` is pattern-restricted to a URL-safe slug; `owner` uses the built-in `OwnerPicker` restricted to `kind: Group` |
-| Repository | `repoUrl` | Built-in `RepoUrlPicker`, `allowedHosts: [github.com]` only |
-| Repository | `repoVisibility` | `private` (default) or `public` |
-| Application metadata | `lifecycle` | `experimental` or `production` |
-| Application metadata | `mode` | `platform-mfe`, `standalone`, or `standalone-and-mfe` |
-| Capabilities | `capabilities` | Multi-select checkboxes, restricted to the 13 curated identifiers below |
+| Repository           | `repoUrl`                               | Built-in `RepoUrlPicker`, `allowedHosts: [github.com]` only                                                          |
+| Repository           | `repoVisibility`                        | `private` (default) or `public`                                                                                      |
+| Application metadata | `lifecycle`                             | `experimental` or `production`                                                                                       |
+| Application metadata | `mode`                                  | `platform-mfe`, `standalone`, or `standalone-and-mfe`                                                                |
+| Capabilities         | `capabilities`                          | Multi-select checkboxes, restricted to the 14 curated identifiers below                                              |
 
 The default branch is **not** a form field - it is hardcoded to `main` in
 the `publish` step's `defaultBranch` input, per the spec.
@@ -22,54 +22,60 @@ the `publish` step's `defaultBranch` input, per the spec.
 ### Curated capabilities
 
 ```text
-authentication, rbac, dashboard, reports, history, audit-log,
+authentication, rbac, dashboard, settings, reports, history, audit-log,
 notifications, tenant, theme, i18n, observability, desktop-ready,
 mobile-ready
 ```
 
 This is a closed enum in `template.yaml` - the form cannot submit any
 value outside this list, and there is no free-text field for package
-names or install commands anywhere in the template.
+names or install commands anywhere in the template. `dashboard` and
+`settings` are frontend Feature Packs with real generated routes, navigation,
+screens, interactions, and tests; see [feature-packs.md](./feature-packs.md).
 
-As of Phase 4, three of the thirteen (`notifications`, `i18n`,
-`observability`) are **composed** into the generated application's code;
-the rest remain recorded only in `platform-app.json`. See
-[capabilities.md](./capabilities.md).
+Three platform capabilities (`notifications`, `i18n`, `observability`) and
+two frontend Feature Packs (`dashboard`, `settings`) are **composed** into
+the generated application's code; the remaining nine selections remain
+recorded only in `platform-app.json`. See [capabilities.md](./capabilities.md)
+and [feature-packs.md](./feature-packs.md).
 
 ### `mode` has real runtime meaning (Phase 5)
 
-Unlike the ten recorded-only capabilities above, `mode` is not just
+Unlike the nine recorded-only capabilities above, `mode` is not just
 metadata: the generated app's own `main.tsx` resolves it against whatever
 platform host is present at boot (see
 [platform-sdk.md](./platform-sdk.md#standalone-vs-hosted) and
 [ADR 0005](./adr/0005-runtime-mode-boundary.md)). In particular, **the
 form's default, `platform-mfe`, requires a platform host to boot at all**
+
 - no Super App shell exists yet, so a freshly scaffolded app left at the
-default mode shows a "Platform host required" screen instead of its UI on
-`npm run dev`, until either a real host exists or `platform-app.json`'s
-`mode` is changed to `standalone` or `standalone-and-mfe`. This is
-intentional (a mode that never fails without a host would carry no real
-meaning), but it is a deliberate DX tradeoff worth knowing before picking
-`platform-mfe` for an app you intend to develop standalone today.
+  default mode shows a "Platform host required" screen instead of its UI on
+  `npm run dev`, until either a real host exists or `platform-app.json`'s
+  `mode` is changed to `standalone` or `standalone-and-mfe`. This is
+  intentional (a mode that never fails without a host would carry no real
+  meaning), but it is a deliberate DX tradeoff worth knowing before picking
+  `platform-mfe` for an app you intend to develop standalone today.
 
 ## Steps
 
 ```text
 fetchBase           -> fetch:template   render templates/platform-mfe-app/skeleton
-pruneCapabilities    -> fs:delete       remove unselected composed capabilities' source (Phase 4)
+pruneCapabilities    -> fs:delete       remove unselected composed platform capabilities
+pruneFeaturePacks    -> fs:delete       remove unselected feature-pack source and route files
 publish              -> publish:github  create + push the GitHub repository (defaultBranch: main)
 register             -> catalog:register register catalog-info.yaml in the new repo
 ```
 
-All four are Backstage built-in actions; no custom scaffolder action was
+All five are Backstage built-in actions; no custom scaffolder action was
 implemented, per the spec's preference for built-ins.
 
 `pruneCapabilities` (added in Phase 4) deletes
 `src/capabilities/<id>/**` in the fetched working directory for each of
-`notifications`, `i18n`, and `observability` that wasn't selected - see
-[capabilities.md](./capabilities.md) for the full composition model and
-why only these three curated capabilities have a real generation effect
-today.
+`notifications`, `i18n`, and `observability` that wasn't selected. The
+following `pruneFeaturePacks` step removes both
+`src/feature-packs/<id>/**` and `src/routes/<id>.tsx` for unselected
+`dashboard` and `settings` packs. See [capabilities.md](./capabilities.md)
+and [feature-packs.md](./feature-packs.md) for the full composition model.
 
 `fetchBase` passes `copyWithoutTemplating: ['.github/workflows/**']`.
 Without this, the skeleton's `.github/workflows/ci.yml` would be run
@@ -82,7 +88,7 @@ falsey`) instead of being copied verbatim.
 
 **Phase 1.1 finding:** the installed
 `@backstage/plugin-scaffolder-backend` version's `fetch:template` action
-handler only wires the *newer* `copyWithoutTemplating` input into the
+handler only wires the _newer_ `copyWithoutTemplating` input into the
 copy-without-rendering behavior - `copyWithoutRender` is still accepted by
 the action's schema (so no validation error) but is silently a no-op. The
 template originally used `copyWithoutRender`, which passed every hermetic
@@ -129,8 +135,10 @@ because plain interpolation of an array produces a comma-joined string
 `runtime.status` is always `not-configured` - no Module Federation runtime
 is installed or wired up by this phase. As of Phase 4, `notifications`,
 `i18n`, and `observability` are composed into `src/capabilities/` when
-selected (see [capabilities.md](./capabilities.md)); the other ten
-curated capabilities remain recorded only. The generated README explicitly
+selected, while `dashboard` and `settings` are composed into
+`src/feature-packs/` (see [capabilities.md](./capabilities.md) and
+[feature-packs.md](./feature-packs.md)); the other nine curated capabilities
+remain recorded only. The generated README explicitly
 lists what was generated, which requested capabilities are composed versus
 recorded only, how to run validation (`npm ci && npm run typecheck && npm
 run build`), and that Module Federation integration is a later phase.

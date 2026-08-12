@@ -13,6 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as FormRouteImport } from './routes/form'
 import { Route as TableRouteImport } from './routes/table'
+{% if 'dashboard' in values.capabilities %}
+import { Route as DashboardRouteImport } from './routes/dashboard'
+{% endif %}
+{% if 'settings' in values.capabilities %}
+import { Route as SettingsRouteImport } from './routes/settings'
+{% endif %}
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +40,44 @@ const TableRoute = TableRouteImport.update({
   path: '/table',
   getParentRoute: () => rootRouteImport,
 } as any)
+{% if 'dashboard' in values.capabilities %}
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+{% endif %}
+{% if 'settings' in values.capabilities %}
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+{% endif %}
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/components': typeof ComponentsRoute
   '/form': typeof FormRoute
   '/table': typeof TableRoute
+{% if 'dashboard' in values.capabilities %}
+  '/dashboard': typeof DashboardRoute
+{% endif %}
+{% if 'settings' in values.capabilities %}
+  '/settings': typeof SettingsRoute
+{% endif %}
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/components': typeof ComponentsRoute
   '/form': typeof FormRoute
   '/table': typeof TableRoute
+{% if 'dashboard' in values.capabilities %}
+  '/dashboard': typeof DashboardRoute
+{% endif %}
+{% if 'settings' in values.capabilities %}
+  '/settings': typeof SettingsRoute
+{% endif %}
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +85,19 @@ export interface FileRoutesById {
   '/components': typeof ComponentsRoute
   '/form': typeof FormRoute
   '/table': typeof TableRoute
+{% if 'dashboard' in values.capabilities %}
+  '/dashboard': typeof DashboardRoute
+{% endif %}
+{% if 'settings' in values.capabilities %}
+  '/settings': typeof SettingsRoute
+{% endif %}
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/components' | '/form' | '/table'
+  fullPaths: '/' | '/components' | '/form' | '/table'{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/components' | '/form' | '/table'
-  id: '__root__' | '/' | '/components' | '/form' | '/table'
+  to: '/' | '/components' | '/form' | '/table'{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}
+  id: '__root__' | '/' | '/components' | '/form' | '/table'{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +105,12 @@ export interface RootRouteChildren {
   ComponentsRoute: typeof ComponentsRoute
   FormRoute: typeof FormRoute
   TableRoute: typeof TableRoute
+{% if 'dashboard' in values.capabilities %}
+  DashboardRoute: typeof DashboardRoute
+{% endif %}
+{% if 'settings' in values.capabilities %}
+  SettingsRoute: typeof SettingsRoute
+{% endif %}
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +143,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TableRouteImport
       parentRoute: typeof rootRouteImport
     }
+{% if 'dashboard' in values.capabilities %}
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+{% endif %}
+{% if 'settings' in values.capabilities %}
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+{% endif %}
   }
 }
 
@@ -107,6 +169,12 @@ const rootRouteChildren: RootRouteChildren = {
   ComponentsRoute: ComponentsRoute,
   FormRoute: FormRoute,
   TableRoute: TableRoute,
+{% if 'dashboard' in values.capabilities %}
+  DashboardRoute: DashboardRoute,
+{% endif %}
+{% if 'settings' in values.capabilities %}
+  SettingsRoute: SettingsRoute,
+{% endif %}
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

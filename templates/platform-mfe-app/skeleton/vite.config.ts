@@ -30,12 +30,23 @@ export default defineConfig({
     globals: true,
     css: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Give jsdom a non-opaque origin so localStorage-backed theme/runtime
+    // behavior is exercised the same way it is in a browser.
+    environmentOptions: {
+      jsdom: {
+        url: 'http://127.0.0.1:5173',
+      },
+    },
     // e2e/ belongs to Playwright; vitest must not try to run those specs.
     exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/routeTree.gen.ts', 'src/test/**', 'src/**/*.test.{ts,tsx}'],
+      exclude: [
+        'src/routeTree.gen.ts',
+        'src/test/**',
+        'src/**/*.test.{ts,tsx}',
+      ],
     },
   },
 });

@@ -23,9 +23,10 @@ consume.
   overlays, identity, feedback, loading, and confirmation states.
 - **Reusable UX Patterns** — only patterns already supported by the platform,
   such as responsive navigation, search/filter, and data presentation.
-- **Application Features** — reserved slots for future Authentication,
-  Dashboard, Settings, Permissions, Reports, and History feature packs; no
-  feature pack is implemented here.
+- **Feature Packs** — the real generated `dashboard` and `settings`
+  implementations, including their routes' screen composition, navigation
+  metadata, interactions, and replaceable sample-data boundaries. Future
+  Authentication, Permissions, Reports, and History packs remain reserved.
 
 Review light/dark themes, narrow layouts, focus and keyboard behavior,
 pending/destructive actions, and non-ideal states before promoting a shared

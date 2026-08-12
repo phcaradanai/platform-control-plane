@@ -14,6 +14,11 @@ import {
 
 const storybookDir = path.dirname(fileURLToPath(import.meta.url));
 const sourceDir = path.resolve(storybookDir, '../src');
+const repoRoot = path.resolve(storybookDir, '../../..');
+const featurePackSourceDir = path.join(
+  repoRoot,
+  'templates/platform-mfe-app/skeleton/src/feature-packs',
+);
 
 const config: StorybookConfig = {
   stories: ['../src/catalog/**/*.stories.@(ts|tsx)'],
@@ -33,6 +38,14 @@ export default {
     mergeConfig(viteConfig, {
       resolve: {
         alias: [
+          {
+            find: '@platform/feature-packs/dashboard',
+            replacement: path.join(featurePackSourceDir, 'dashboard/index.tsx'),
+          },
+          {
+            find: '@platform/feature-packs/settings',
+            replacement: path.join(featurePackSourceDir, 'settings/index.tsx'),
+          },
           {
             find: '@platform/ui/theme.css',
             replacement: path.join(sourceDir, 'styles/theme.css'),
