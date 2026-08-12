@@ -104,6 +104,7 @@ export function ConfirmDialog({
             variant={destructive ? 'destructive' : 'default'}
             onClick={() => void handleConfirm()}
             disabled={pending}
+            aria-busy={pending || undefined}
           >
             {pending ? pendingLabel : confirmLabel}
           </Button>

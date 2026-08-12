@@ -68,6 +68,9 @@
     "@types/react-dom": "^18"
   },
   "prettier": "@backstage/cli/config/prettier",
+  "jest": {
+    "resolver": "<rootDir>/../../../jest.resolver.cjs"
+  },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
       "eslint --fix",

@@ -32,7 +32,7 @@ export function ThemeToggle() {
             title={option.label}
             onClick={() => setPreference(option.value)}
             className={cn(
-              'inline-flex size-8 items-center justify-center rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'inline-flex size-11 items-center justify-center rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               active
                 ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',

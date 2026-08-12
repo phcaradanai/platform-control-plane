@@ -30,6 +30,7 @@
     "storybook:build": "storybook build",
     "clean": "rm -rf dist",
     "lint": "node ../../node_modules/@backstage/cli/bin/backstage-cli package lint",
+    "test": "node ../../node_modules/@backstage/cli/bin/backstage-cli package test",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
