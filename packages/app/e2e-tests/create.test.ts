@@ -20,6 +20,7 @@ const CAPABILITIES = [
   'authentication',
   'rbac',
   'dashboard',
+  'settings',
   'reports',
   'history',
   'audit-log',
@@ -40,7 +41,10 @@ test('Create page lists the Platform MFE Application template', async ({
   page,
 }) => {
   await page.goto('/create');
-  await page.getByRole('button', { name: 'Enter' }).click().catch(() => {});
+  await page
+    .getByRole('button', { name: /enter/i })
+    .click()
+    .catch(() => {});
 
   await expect(
     page.getByRole('heading', { name: 'Platform MFE Application' }),
@@ -50,10 +54,15 @@ test('Create page lists the Platform MFE Application template', async ({
 test('Platform MFE Application form renders and progresses through every step', async ({
   page,
 }, testInfo) => {
-  const appName = `smoke-form-check-${testInfo.repeatEachIndex}-${Date.now() % 100000}`;
+  const appName = `smoke-form-check-${testInfo.repeatEachIndex}-${
+    Date.now() % 100000
+  }`;
 
   await page.goto('/create/templates/default/platform-mfe-app');
-  await page.getByRole('button', { name: 'Enter' }).click().catch(() => {});
+  await page
+    .getByRole('button', { name: /enter/i })
+    .click()
+    .catch(() => {});
 
   await expect(
     page.getByRole('heading', { name: 'Platform MFE Application' }),
@@ -70,15 +79,21 @@ test('Platform MFE Application form renders and progresses through every step', 
   await page.getByLabel(/^Title/).fill('Smoke Form Check');
   await identityOwner.click();
   await identityOwner.fill('platform-team');
-  await expect(page.getByRole('option', { name: 'platform-team' })).toBeVisible();
+  await expect(
+    page.getByRole('option', { name: 'platform-team' }),
+  ).toBeVisible();
   await page.getByRole('option', { name: 'platform-team' }).click();
   await clickNext(page);
 
   // --- Step 2: Repository (repoUrl, repoVisibility) ---
   await expect(page.getByText('Repository Location')).toBeVisible();
   await expect(page.getByText('Repository Visibility')).toBeVisible();
-  await expect(page.getByText('private', { exact: false }).first()).toBeVisible();
-  await expect(page.getByText('public', { exact: false }).first()).toBeVisible();
+  await expect(
+    page.getByText('private', { exact: false }).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByText('public', { exact: false }).first(),
+  ).toBeVisible();
 
   await page
     .getByRole('textbox', { name: 'Owner', exact: true })
@@ -93,7 +108,12 @@ test('Platform MFE Application form renders and progresses through every step', 
   await page.waitForTimeout(2500);
   await clickNext(page);
   await page.waitForTimeout(1000);
-  if (!(await page.getByText('Lifecycle').isVisible().catch(() => false))) {
+  if (
+    !(await page
+      .getByText('Lifecycle')
+      .isVisible()
+      .catch(() => false))
+  ) {
     await clickNext(page);
   }
 
@@ -110,8 +130,12 @@ test('Platform MFE Application form renders and progresses through every step', 
     page.getByRole('radio', { name: 'standalone-and-mfe' }),
   ).toBeVisible();
 
-  await page.getByRole('radio', { name: 'experimental' }).check({ force: true });
-  await page.getByRole('radio', { name: 'platform-mfe' }).check({ force: true });
+  await page
+    .getByRole('radio', { name: 'experimental' })
+    .check({ force: true });
+  await page
+    .getByRole('radio', { name: 'platform-mfe' })
+    .check({ force: true });
   await clickNext(page);
 
   // --- Step 4: Capabilities ---

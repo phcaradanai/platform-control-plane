@@ -92,8 +92,11 @@ Radix-based, accessible by default: `Avatar`, `Badge`, `Button`, `Card`,
 `QueryBoundary`) and theme (`ThemeProvider`, `ThemeToggle`). All are
 rendered live, in both themes, in the platform Design System Portal - treat
 that portal as the visual source of truth after any `@platform/ui` change.
-The generated application's `/components` route is only an integration
-smoke page; it is not a second catalog or design-system implementation.
+The generated application's `/components`, `/table`, and `/form` routes are
+developer verification pages only; they are not a second catalog, design-
+system implementation, or application-facing default. They are deliberately
+absent from the generated shell navigation and home page. A product should
+remove or replace them when it establishes its own information architecture.
 
 `Sheet` and `ConfirmDialog` were promoted in this phase after the
 Workspace Hub exercise showed a developer hand-rolling both from raw

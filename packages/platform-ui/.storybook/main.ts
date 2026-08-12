@@ -27,52 +27,51 @@ const config: StorybookConfig = {
     name: '@storybook/react-vite',
     options: {},
   },
-  docs: {
-    autodocs: 'tag',
-  },
 };
+
+const viteFinal: NonNullable<StorybookConfig['viteFinal']> = async viteConfig =>
+  mergeConfig(viteConfig, {
+    resolve: {
+      alias: [
+        {
+          find: '@platform/feature-packs/dashboard',
+          replacement: path.join(featurePackSourceDir, 'dashboard/index.tsx'),
+        },
+        {
+          find: '@platform/feature-packs/settings',
+          replacement: path.join(featurePackSourceDir, 'settings/index.tsx'),
+        },
+        {
+          find: '@platform/ui/theme.css',
+          replacement: path.join(sourceDir, 'styles/theme.css'),
+        },
+        {
+          find: '@platform/ui/uno-preset',
+          replacement: path.join(sourceDir, 'uno-preset.ts'),
+        },
+        {
+          find: '@platform/ui',
+          replacement: path.join(sourceDir, 'index.ts'),
+        },
+      ],
+    },
+    plugins: [
+      UnoCSS({
+        presets: [presetWind3()],
+        theme: platformUnoTheme,
+        shortcuts: platformUnoShortcuts,
+        preflights: platformUnoPreflights,
+        content: {
+          filesystem: [
+            path.join(sourceDir, '**/*.{ts,tsx}'),
+            path.join(storybookDir, '**/*.{ts,tsx}'),
+          ],
+        },
+      }),
+    ],
+  });
 
 export default {
   ...config,
-  viteFinal: async viteConfig =>
-    mergeConfig(viteConfig, {
-      resolve: {
-        alias: [
-          {
-            find: '@platform/feature-packs/dashboard',
-            replacement: path.join(featurePackSourceDir, 'dashboard/index.tsx'),
-          },
-          {
-            find: '@platform/feature-packs/settings',
-            replacement: path.join(featurePackSourceDir, 'settings/index.tsx'),
-          },
-          {
-            find: '@platform/ui/theme.css',
-            replacement: path.join(sourceDir, 'styles/theme.css'),
-          },
-          {
-            find: '@platform/ui/uno-preset',
-            replacement: path.join(sourceDir, 'uno-preset.ts'),
-          },
-          {
-            find: '@platform/ui',
-            replacement: path.join(sourceDir, 'index.ts'),
-          },
-        ],
-      },
-      plugins: [
-        UnoCSS({
-          presets: [presetWind3()],
-          theme: platformUnoTheme,
-          shortcuts: platformUnoShortcuts,
-          preflights: platformUnoPreflights,
-          content: {
-            filesystem: [
-              path.join(sourceDir, '**/*.{ts,tsx}'),
-              path.join(storybookDir, '**/*.{ts,tsx}'),
-            ],
-          },
-        }),
-      ],
-    }),
+  viteFinal,
 };

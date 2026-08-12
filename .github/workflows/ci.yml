@@ -27,6 +27,12 @@ jobs:
       - name: Typecheck
         run: node .yarn/releases/yarn-4.13.0.cjs tsc
 
+      - name: Typecheck Design System Portal
+        run: node .yarn/releases/yarn-4.13.0.cjs workspace @platform/ui typecheck:storybook
+
+      - name: Build Design System Portal
+        run: node .yarn/releases/yarn-4.13.0.cjs build:portal
+
       - name: Test
         run: node .yarn/releases/yarn-4.13.0.cjs test:all
 

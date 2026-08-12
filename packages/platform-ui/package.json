@@ -31,7 +31,8 @@
     "clean": "rm -rf dist",
     "lint": "node ../../node_modules/@backstage/cli/bin/backstage-cli package lint",
     "test": "node ../../node_modules/@backstage/cli/bin/backstage-cli package test",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:storybook": "tsc --noEmit -p tsconfig.storybook.json"
   },
   "peerDependencies": {
     "@radix-ui/react-checkbox": "^1.3.11",

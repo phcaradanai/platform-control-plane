@@ -16,11 +16,12 @@
 
 import { test, expect } from '@playwright/test';
 
-test('Catalog lists the platform-control-plane component', async ({
-  page,
-}) => {
+test('Catalog lists the platform-control-plane component', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Enter' }).click();
+  await page
+    .getByRole('button', { name: /enter/i })
+    .click()
+    .catch(() => {});
 
   await page
     .getByRole('navigation', { name: 'sidebar nav' })

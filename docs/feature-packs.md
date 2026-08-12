@@ -20,7 +20,7 @@ interface FeaturePack {
     readonly icon?: ComponentType<...>;
   };
   readonly screen: ComponentType;
-  readonly dependencies?: readonly string[];
+  readonly dependencies?: readonly ('@platform/ui' | '@platform/sdk')[];
   readonly documentation?: ReactNode;
 }
 ```
@@ -30,6 +30,15 @@ shell composition; the pack owns the route identity, navigation metadata,
 screen, standard-pattern composition, and its own interactions/tests. Packs do
 not own a backend, authentication policy, permission policy, tenant model, or
 business-domain data model.
+
+`dependencies` is a declarative, platform-only dependency contract. Each entry
+must be one of the explicitly allowlisted platform packages already available
+in the base skeleton: `@platform/ui` or `@platform/sdk`. A pack cannot request
+arbitrary npm packages, mutate the generated lockfile, or trigger an install
+during scaffolding. The App Factory owns the package manifest. Feature-pack-to-
+feature-pack dependencies are not supported yet; a future pack that needs
+another pack must make that relationship an explicit, validated selection
+rather than silently importing an unselected screen.
 
 ## Implemented packs
 
@@ -56,6 +65,27 @@ The package dependency graph stays frozen and shared. Packs use dependencies
 already present in the base skeleton (`@platform/ui`, React, and lucide-react),
 so selecting a pack does not require a per-selection lockfile or a post-
 generation install step.
+
+### Text and optional i18n
+
+Pack navigation metadata and sample screen copy are fallback application text,
+not a dependency on a particular translation library. Packs do not import the
+optional `i18n` capability. When `i18n` is selected, the generated shell
+localizes its platform-owned navigation labels through stable `navigation.*`
+keys and falls back to the pack's metadata when a key is not supplied. Product
+owners remain responsible for translating or replacing pack screen copy at the
+domain boundary; `@platform/ui` stays copy-agnostic and accepts caller-provided
+labels.
+
+### Developer verification routes
+
+The generic `/components`, `/table`, and `/form` routes are intentionally
+developer verification examples for the generated foundation and its smoke
+tests. They are not application-facing defaults: the shell navigation and home
+page do not link to them. A product should remove or replace these routes when
+its domain information architecture is introduced. They are kept in the
+skeleton so a fresh app can verify shared primitives, data-page behavior, and
+form behavior without promoting those demos into a product feature pack.
 
 ## Verified configurations
 

@@ -13,6 +13,7 @@ import {
 
 const meta = {
   title: 'Feature packs',
+  tags: ['autodocs'],
   parameters: {
     docs: {
       description: {

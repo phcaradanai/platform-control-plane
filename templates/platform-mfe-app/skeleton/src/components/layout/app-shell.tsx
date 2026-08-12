@@ -11,6 +11,7 @@ import { NotificationsCenter } from '../../capabilities/notifications/notificati
 {% endif %}
 {% if 'i18n' in values.capabilities %}
 import { LanguageSwitcher } from '../../capabilities/i18n/language-switcher';
+import { useI18n } from '../../capabilities/i18n/i18n-provider';
 {% endif %}
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -18,30 +19,25 @@ export function AppShell({ children }: { children: ReactNode }) {
     select: state => state.location.pathname,
   });
 
+{% if 'i18n' in values.capabilities %}
+  const { t } = useI18n();
+  const translate = (key: string, fallback: string) => {
+    const message = t(key);
+    return message === key ? fallback : message;
+  };
+{% endif %}
+
+  // Components, Table, and Form remain direct developer verification routes,
+  // but are intentionally not application-facing shell defaults.
   const navigation = [
     {
       href: '/',
-      label: 'Home',
+      label: {% if 'i18n' in values.capabilities %}translate('navigation.home', 'Home'){% else %}'Home'{% endif %},
       current: pathname === '/',
-    },
-    {
-      href: '/components',
-      label: 'Components',
-      current: pathname === '/components',
-    },
-    {
-      href: '/table',
-      label: 'Table',
-      current: pathname === '/table',
-    },
-    {
-      href: '/form',
-      label: 'Form',
-      current: pathname === '/form',
     },
     ...featurePacks.map(pack => ({
       href: pack.route,
-      label: pack.navigation.label,
+      label: {% if 'i18n' in values.capabilities %}translate(`navigation.${pack.id}`, pack.navigation.label){% else %}pack.navigation.label{% endif %},
       current: pathname === pack.route,
       icon: pack.navigation.icon ? (
         <pack.navigation.icon className="size-4" aria-hidden="true" />

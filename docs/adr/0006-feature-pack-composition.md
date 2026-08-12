@@ -19,7 +19,7 @@ contract. A selected pack contributes:
   `ApplicationShell`;
 - a screen composed from shared application patterns;
 - neutral states/interactions and focused tests;
-- explicit dependency and replacement-boundary metadata.
+- explicit platform-only dependency and replacement-boundary metadata.
 
 The template's Nunjucks guards render only selected registry and route-tree
 entries. A single `fs:delete` step removes unselected pack directories and
@@ -38,8 +38,12 @@ also means selection cannot introduce arbitrary per-pack npm dependencies.
 
 - Dashboard and Settings are real generated features, not metadata or empty
   placeholder routes.
-- No optional pack adds a new dependency; all use the base skeleton's shared
-  packages.
+- No optional pack adds a new dependency; `dependencies` accepts only the
+  explicitly allowlisted `@platform/ui` and `@platform/sdk` identifiers
+  already provided by the base skeleton.
+  The App Factory does not run pack-controlled installs or vary the lockfile.
+  Pack-to-pack dependencies are not implicit; they require a future explicit
+  selection contract.
 - The committed route tree is templated per selection so generated apps can
   typecheck before their first build; the TanStack Router plugin regenerates it
   from the pruned route files during build.
@@ -47,6 +51,9 @@ also means selection cannot introduce arbitrary per-pack npm dependencies.
   contracts. No fake security behavior is introduced.
 - A future pack that needs a backend can define a frontend contract first and
   add the backend in a separate phase rather than hiding it in sample UI.
+- Pack labels and sample copy remain translation-library-neutral. The optional
+  `i18n` capability localizes platform shell labels when selected, while a
+  product owns localization/replacement of pack screen copy.
 
 ## Rejected alternatives
 

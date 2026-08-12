@@ -1,4 +1,10 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 
 /**
@@ -16,11 +22,17 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
     'language.label': 'Language',
     'language.en': 'English',
     'language.es': 'Spanish',
+    'navigation.home': 'Home',
+    'navigation.dashboard': 'Dashboard',
+    'navigation.settings': 'Settings',
   },
   es: {
     'language.label': 'Idioma',
     'language.en': 'Inglés',
     'language.es': 'Español',
+    'navigation.home': 'Inicio',
+    'navigation.dashboard': 'Panel',
+    'navigation.settings': 'Configuración',
   },
 };
 

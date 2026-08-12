@@ -15,7 +15,7 @@ rationale and the alternatives that were ruled out.
 `templates/platform-mfe-app/template.yaml`'s `capabilities` field is a
 closed, 14-item enum (see [app-template.md](./app-template.md)). Every
 selection is recorded in the generated `platform-app.json`, unchanged from
-earlier phases. As of Phase 4, three of the thirteen are additionally
+earlier phases. As of Phase 4, three of the fourteen are additionally
 **composed** - they deterministically add real files, wiring, and (gated)
 UI to the generated application:
 
@@ -66,7 +66,7 @@ Keycloak, a tenant backend, desktop/mobile shells).
 
    - `src/app.tsx` - mounts `I18nProvider` (`i18n`).
    - `src/main.tsx` - calls `initObservability()` (`observability`).
-   - `src/components/layout/header.tsx` - renders `LanguageSwitcher`
+   - `src/components/layout/app-shell.tsx` - renders `LanguageSwitcher`
      (`i18n`) and `NotificationsCenter` (`notifications`).
 
    Each capability's implementation lives entirely under its own
@@ -83,7 +83,7 @@ Keycloak, a tenant backend, desktop/mobile shells).
    `SecureTemplater` only reconfigures nunjucks's _variable_ delimiters to
    `${{ }}`; block tags (`{% %}`) keep their nunjucks defaults, so this
    works against the real scaffolder backend, not just the hermetic test
-   harness. The result: a generated app's `app.tsx`/`main.tsx`/`header.tsx`
+   harness. The result: a generated app's `app.tsx`/`main.tsx`/`app-shell.tsx`
    contain only the imports and calls for capabilities that were actually
    selected - no dead conditionals survive into the generated repository.
 
@@ -154,7 +154,7 @@ parameters.capabilities`) simply evaluates to a normal true/false with no
 2. Add `src/capabilities/<id>/` to the skeleton with its implementation and
    tests, self-contained.
 3. Add an `{% if '<id>' in values.capabilities %} ... {% endif %}` guard at
-   the relevant extension point(s) (`app.tsx`, `main.tsx`, `header.tsx`, or
+   the relevant extension point(s) (`app.tsx`, `main.tsx`, `app-shell.tsx`, or
    a new documented extension point if none of those fit).
 4. Add `<id>` to `pruneCapabilities`' `each:` list in `template.yaml`.
 5. Add the capability to the table above.

@@ -12,6 +12,7 @@ declare module '@platform/feature-packs/dashboard' {
       readonly icon: LucideIcon;
     };
     readonly screen: ComponentType;
+    readonly dependencies: readonly ['@platform/ui'];
   };
 }
 
@@ -29,5 +30,6 @@ declare module '@platform/feature-packs/settings' {
       readonly icon: LucideIcon;
     };
     readonly screen: ComponentType;
+    readonly dependencies: readonly ['@platform/ui'];
   };
 }

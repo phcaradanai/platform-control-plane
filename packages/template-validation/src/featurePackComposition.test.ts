@@ -67,6 +67,13 @@ function renderAndPrune(capabilities: string[]) {
   return rendered;
 }
 
+function declaredDependencies(content: string): string[] {
+  const match = content.match(/dependencies:\s*\[([^\]]*)\]/);
+  return match
+    ? [...match[1].matchAll(/['"]([^'"]+)['"]/g)].map(result => result[1])
+    : [];
+}
+
 describe('frontend feature pack composition', () => {
   it('uses one deterministic prune step for dashboard and settings', () => {
     expect(pruneStep.if).toBe(
@@ -136,6 +143,9 @@ describe('frontend feature pack composition', () => {
 
   it('composes both packs through the same application shell and shared UI package', () => {
     const rendered = renderAndPrune(['dashboard', 'settings']);
+    expect(rendered.get('src/feature-packs/contract.ts')).toContain(
+      "type PlatformDependency = '@platform/ui' | '@platform/sdk'",
+    );
     expect(rendered.get('src/components/layout/app-shell.tsx')).toContain(
       "from '@platform/ui'",
     );
@@ -152,6 +162,43 @@ describe('frontend feature pack composition', () => {
       'DashboardScreen',
     );
     expect(rendered.get('src/routes/settings.tsx')).toContain('SettingsScreen');
+    expect(rendered.get('src/feature-packs/dashboard/index.tsx')).toContain(
+      "dependencies: ['@platform/ui']",
+    );
+    expect(rendered.get('src/feature-packs/settings/index.tsx')).toContain(
+      "dependencies: ['@platform/ui']",
+    );
+
+    const generatedPackage = JSON.parse(rendered.get('package.json')!);
+    for (const id of FEATURE_PACKS) {
+      const dependencies = declaredDependencies(
+        rendered.get(`src/feature-packs/${id}/index.tsx`)!,
+      );
+      expect(
+        dependencies.every(dependency => dependency.startsWith('@platform/')),
+      ).toBe(true);
+      for (const dependency of dependencies) {
+        expect(generatedPackage.dependencies[dependency]).toBeDefined();
+      }
+    }
+  });
+
+  it('keeps verification routes out of product navigation and localizes shell text only when i18n is selected', () => {
+    const base = renderAndPrune([]).get('src/components/layout/app-shell.tsx');
+    expect(base).not.toContain("href: '/components'");
+    expect(base).not.toContain("href: '/table'");
+    expect(base).not.toContain("href: '/form'");
+
+    const withI18n = renderAndPrune(['i18n', 'dashboard', 'settings']);
+    expect(withI18n.get('src/components/layout/app-shell.tsx')).toContain(
+      'useI18n',
+    );
+    expect(withI18n.get('src/components/layout/app-shell.tsx')).toContain(
+      'navigation.',
+    );
+    expect(withI18n.get('src/capabilities/i18n/i18n-provider.tsx')).toContain(
+      "'navigation.dashboard'",
+    );
   });
 
   it('leaves no unresolved template tags or optional feature imports after pruning', () => {

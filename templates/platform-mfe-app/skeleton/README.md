@@ -17,10 +17,11 @@ A production-ready React frontend boilerplate:
   works standalone in CI without a prior build.
 - **TanStack Query** — server-state management with sensible defaults and
   devtools in development (`src/app.tsx`).
-- **TanStack Table + TanStack Virtual** — a virtualized, sortable, filterable
-  table demo at `/table` (`src/features/table-demo/`).
-- **React Hook Form + Zod** — a validated form demo at `/form`
-  (`src/features/form-demo/`).
+- **Developer verification examples** — a component catalog at `/components`,
+  a virtualized table at `/table` (`src/features/table-demo/`), and a validated
+  form at `/form` (`src/features/form-demo/`). These direct routes support
+  foundation smoke tests; they are intentionally not product navigation
+  defaults and should be removed or replaced when domain UX is added.
 - **Shared @platform/ui foundation** — accessible primitives, feedback
   states, ThemeProvider, ThemeToggle, and the cn utility are imported from
   the vendored @platform/ui package. Product code consumes these exports;
@@ -45,8 +46,8 @@ A production-ready React frontend boilerplate:
   keeps only its product/runtime-specific feedback in src/components.
 - **Testing** — Vitest + Testing Library unit/component tests (`npm test`)
   and Playwright browser smoke tests (`npm run test:e2e`) covering boot,
-  theming, Sheet, ConfirmDialog, Avatar, the table, the form, and the 404
-  page.
+  theming, Sheet, ConfirmDialog, Avatar, the table, the form, feature-pack
+  route composition, and the 404 page.
 - **Accessibility** — skip link, semantic landmarks, `aria-current` nav,
   focus-visible rings, keyboard-operable controls, and
   `prefers-reduced-motion` support.
@@ -137,7 +138,7 @@ src/
     layout/       app shell composed from @platform/ui
     feedback/     runtime-specific fallback UI
   platform-ui/    integration tests for the shared @platform/ui contract
-  features/       feature modules (health, table demo, form demo)
+  features/       feature modules (health and developer verification examples)
   lib/            env validation, app-info, runtime and navigation adapters
   routes/         TanStack Router file-based routes
   test/           Vitest setup
