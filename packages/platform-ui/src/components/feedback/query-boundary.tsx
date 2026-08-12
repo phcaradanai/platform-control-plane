@@ -8,12 +8,14 @@ import { LoadingState } from './loading-state.js';
 export interface QueryBoundaryProps<T> {
   query: UseQueryResult<T>;
   loading?: ReactNode;
-  empty?: {
+  loadingLabel: string;
+  empty: {
     title: string;
     description?: string;
     action?: ReactNode;
   };
-  errorTitle?: string;
+  errorTitle: string;
+  retryLabel: string;
   /** Renders the resolved data. Called only when data is defined and non-empty. */
   children: (data: T) => ReactNode;
 }
@@ -40,12 +42,14 @@ function isEmpty(value: unknown): boolean {
 export function QueryBoundary<T>({
   query,
   loading,
+  loadingLabel,
   empty,
   errorTitle,
+  retryLabel,
   children,
 }: QueryBoundaryProps<T>) {
   if (query.isPending) {
-    return loading ?? <LoadingState />;
+    return loading ?? <LoadingState label={loadingLabel} />;
   }
 
   if (query.isError) {
@@ -53,6 +57,7 @@ export function QueryBoundary<T>({
       <ErrorState
         title={errorTitle}
         message={query.error instanceof Error ? query.error.message : undefined}
+        retryLabel={retryLabel}
         onRetry={() => void query.refetch()}
       />
     );
@@ -61,9 +66,9 @@ export function QueryBoundary<T>({
   if (isEmpty(query.data)) {
     return (
       <EmptyState
-        title={empty?.title ?? 'Nothing here yet'}
-        description={empty?.description}
-        action={empty?.action}
+        title={empty.title}
+        description={empty.description}
+        action={empty.action}
       />
     );
   }

@@ -1,5 +1,12 @@
 import * as ToastPrimitive from '@radix-ui/react-toast';
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 
 import { cn } from '../../lib/cn.js';
@@ -36,7 +43,14 @@ const variantClasses: Record<ToastVariant, string> = {
   destructive: 'border-destructive',
 };
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({
+  children,
+  dismissLabel,
+}: {
+  children: ReactNode;
+  /** Accessible label for every toast dismiss action. Localize at the app boundary. */
+  dismissLabel: string;
+}) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const nextId = useRef(0);
 
@@ -44,21 +58,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts(current => current.filter(toast => toast.id !== id));
   }, []);
 
-  const toast = useCallback(
-    (options: ToastOptions) => {
-      const id = nextId.current++;
-      setToasts(current => [
-        ...current,
-        {
-          id,
-          title: options.title,
-          description: options.description ?? '',
-          variant: options.variant ?? 'default',
-        },
-      ]);
-    },
-    [],
-  );
+  const toast = useCallback((options: ToastOptions) => {
+    const id = nextId.current++;
+    setToasts(current => [
+      ...current,
+      {
+        id,
+        title: options.title,
+        description: options.description ?? '',
+        variant: options.variant ?? 'default',
+      },
+    ]);
+  }, []);
 
   const value = useMemo(() => ({ toast }), [toast]);
 
@@ -90,7 +101,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               ) : null}
             </div>
             <ToastPrimitive.Close
-              aria-label="Dismiss notification"
+              aria-label={dismissLabel}
               className="rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span aria-hidden="true">&times;</span>

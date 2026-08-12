@@ -9,9 +9,10 @@ generated application is expected to build for itself, and where the line
 between the two sits.
 
 If you are building a new application on this platform and haven't seen
-another application's code, this document plus `@platform/ui`'s exports
-and the generated `/components` catalog page are the intended starting
-point.
+another application's code, this document, `@platform/ui`'s exports, and
+the platform [Design System Portal](./design-system-portal.md) are the
+intended starting point. Run `yarn dev:portal` and open
+`http://127.0.0.1:6006` to inspect the live standard.
 
 ## Ownership model
 
@@ -88,9 +89,11 @@ Radix-based, accessible by default: `Avatar`, `Badge`, `Button`, `Card`,
 `Select`, `Sheet`, `Skeleton`, `Spinner`, `Switch`, `Tabs`, `Toast`
 (`ToastProvider`/`useToast`), `Tooltip`. Plus feedback states
 (`LoadingState`, `ErrorState`, `EmptyState`, `NotFoundState`,
-`QueryBoundary`) and theme (`ThemeProvider`, `ThemeToggle`). All rendered
-live, in both themes, on the generated app's `/components` route - treat
-that page as the visual source of truth after any `@platform/ui` change.
+`QueryBoundary`) and theme (`ThemeProvider`, `ThemeToggle`). All are
+rendered live, in both themes, in the platform Design System Portal - treat
+that portal as the visual source of truth after any `@platform/ui` change.
+The generated application's `/components` route is only an integration
+smoke page; it is not a second catalog or design-system implementation.
 
 `Sheet` and `ConfirmDialog` were promoted in this phase after the
 Workspace Hub exercise showed a developer hand-rolling both from raw
@@ -132,6 +135,12 @@ disabled:pointer-events-none` (already in the `btn`/`input` shortcuts) -
   (`useQuery`/`useMutation`); let `QueryBoundary` and `useToast` own the
   loading/error/success surface rather than local `useState` state
   machines per screen.
+
+Shared feedback primitives take product-facing labels from the application
+instead of inventing English defaults. Pass localized labels to
+`LoadingState`, `ErrorState`, `NotFoundState`, `QueryBoundary`, and
+`ToastProvider`. The application owns the translated message and the
+recovery action; the primitive owns semantics, layout, and interaction.
 
 ## Application conventions
 
@@ -254,3 +263,9 @@ src/components/theme/theme-provider, or src/styles/theme.css, and it must
 not copy Radix wrappers or token definitions into a local layer. If a
 cross-product behavior is missing, raise it as a platform primitive
 proposal rather than quietly forking the generated foundation.
+
+The permanent visual review surface is the platform Design System Portal,
+not generated application code. A standardized application feature is not
+eligible to become an App Factory selection until its important UX/UI states
+can be inspected there; see [design-system-portal.md](./design-system-portal.md)
+for the catalog boundary and commands.

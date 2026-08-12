@@ -11,7 +11,13 @@ function renderBoundary(query: Parameters<typeof QueryBoundary>[0]['query']) {
   });
   return render(
     <QueryClientProvider client={client}>
-      <QueryBoundary query={query} empty={{ title: 'No data' }} errorTitle="Load failed">
+      <QueryBoundary
+        query={query}
+        loadingLabel="Loading data"
+        empty={{ title: 'No data' }}
+        errorTitle="Load failed"
+        retryLabel="Try again"
+      >
         {data => <div data-testid="data">{JSON.stringify(data)}</div>}
       </QueryBoundary>
     </QueryClientProvider>,

@@ -6,6 +6,7 @@ GitHub repositories via the **Platform MFE Application** software template
 
 - **Frontend:** http://localhost:3000 (guest login → Catalog → Create)
 - **Backend:** http://localhost:7007
+- **Design System Portal:** http://127.0.0.1:6006 (`yarn dev:portal`)
 - **Backend readiness:** `http://localhost:7007/.backstage/health/v1/readiness`
   (returns `503` until startup completes, then `200`)
 
@@ -71,6 +72,10 @@ node .yarn/releases/yarn-4.13.0.cjs tsc
 node .yarn/releases/yarn-4.13.0.cjs test:all
 node .yarn/releases/yarn-4.13.0.cjs build:all
 
+# Design-system catalog: source-backed Storybook portal.
+node .yarn/releases/yarn-4.13.0.cjs dev:portal
+node .yarn/releases/yarn-4.13.0.cjs build:portal
+
 # End-to-end: guest -> catalog -> create smoke tests in a real browser.
 # Playwright starts the backend + frontend itself (webServer config).
 node .yarn/releases/yarn-4.13.0.cjs test:e2e:smoke
@@ -87,6 +92,8 @@ starts both processes and runs the Catalog/Create smoke tests).
   generates
 - [`docs/frontend-standards.md`](docs/frontend-standards.md) — the
   frontend design/UX standard every generated application starts from
+- [`docs/design-system-portal.md`](docs/design-system-portal.md) — the
+  source-backed visual catalog and App Factory feature gate
 - [`docs/catalog-model.md`](docs/catalog-model.md) — catalog entities
 - [`docs/github-integration.md`](docs/github-integration.md) — GitHub token
   / integration setup

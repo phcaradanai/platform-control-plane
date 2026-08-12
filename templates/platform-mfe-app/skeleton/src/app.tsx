@@ -42,7 +42,7 @@ export function App({ runtime }: { runtime: ResolvedPlatformRuntime }) {
       {% if 'i18n' in values.capabilities %}<I18nProvider>{% endif %}
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <ToastProvider>
+          <ToastProvider dismissLabel="Dismiss notification">
             <RouterProvider router={router} />
           </ToastProvider>
           {import.meta.env.DEV ? (

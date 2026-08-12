@@ -1,6 +1,6 @@
 import { Spinner } from '../ui/spinner.js';
 
-export function LoadingState({ label = 'Loading…' }: { label?: string }) {
+export function LoadingState({ label }: { label: string }) {
   return (
     <div
       role="status"

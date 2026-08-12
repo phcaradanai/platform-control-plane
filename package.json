@@ -22,6 +22,8 @@
     "prettier:check": "prettier --check .",
     "new": "backstage-cli new",
     "dev:app": "node .yarn/releases/yarn-4.13.0.cjs workspace app start",
+    "dev:portal": "node .yarn/releases/yarn-4.13.0.cjs workspace @platform/ui storybook",
+    "build:portal": "node .yarn/releases/yarn-4.13.0.cjs workspace @platform/ui storybook:build",
     "dev:backend": "node .yarn/releases/yarn-4.13.0.cjs workspace backend start",
     "test:e2e:smoke": "node .yarn/releases/yarn-4.13.0.cjs playwright test packages/app/e2e-tests/catalog.test.ts packages/app/e2e-tests/create.test.ts packages/app/e2e-tests/sign-in.test.ts"
   },
@@ -44,13 +46,22 @@
     "@backstage/e2e-test-utils": "^0.1.2",
     "@jest/environment-jsdom-abstract": "~30.2.0",
     "@playwright/test": "^1.32.3",
+    "@storybook/addon-a11y": "10.5.7",
+    "@storybook/react-vite": "10.5.7",
     "@types/jest": "^30.0.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@unocss/reset": "66.7.5",
     "dotenv-cli": "^11.0.0",
     "jest": "~30.2.0",
     "jsdom": "^27.1.0",
     "node-gyp": "^10.0.0",
     "prettier": "^2.3.2",
-    "typescript": "~5.8.0"
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "storybook": "10.5.7",
+    "typescript": "~5.8.0",
+    "vite": "8.2.1"
   },
   "resolutions": {
     "@types/react": "^18",

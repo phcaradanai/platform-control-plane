@@ -179,6 +179,22 @@ request to `main` and every push to `main` - see
 See [app-template.md](./app-template.md) for what gets generated and
 [catalog-model.md](./catalog-model.md) for how it's registered.
 
+## Inspect the frontend standard
+
+The permanent design-system review surface is the source-backed Storybook
+portal owned by `@platform/ui`:
+
+```bash
+node .yarn/releases/yarn-4.13.0.cjs dev:portal
+```
+
+Open <http://127.0.0.1:6006> to inspect foundations, shared primitives,
+supported patterns, themes, responsive states, and reserved future feature
+slots. Build it with
+`node .yarn/releases/yarn-4.13.0.cjs build:portal`. Generated applications
+may include a `/components` smoke page, but it is not a replacement for this
+platform catalog.
+
 ## Known limitations
 
 - No production deployment, Module Federation runtime, or Nx capability

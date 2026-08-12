@@ -26,6 +26,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build",
     "clean": "rm -rf dist",
     "lint": "node ../../node_modules/@backstage/cli/bin/backstage-cli package lint",
     "typecheck": "tsc --noEmit -p tsconfig.json"
@@ -63,15 +65,20 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@radix-ui/react-toast": "^1.2.23",
     "@radix-ui/react-tooltip": "^1.2.16",
+    "@storybook/addon-a11y": "10.5.7",
+    "@storybook/react-vite": "10.5.7",
     "@tanstack/react-query": "^5.101.4",
     "@types/node": "^22",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "@unocss/reset": "66.7.5",
     "clsx": "^2.1.1",
     "lucide-react": "^1.27.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "storybook": "10.5.7",
     "typescript": "^5.9.2",
-    "unocss": "^66.7.5"
+    "unocss": "^66.7.5",
+    "vite": "8.2.1"
   }
 }

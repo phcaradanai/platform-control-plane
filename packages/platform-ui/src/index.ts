@@ -24,8 +24,10 @@ export { ThemeToggle } from './components/theme/theme-toggle.js';
 // Feedback states + query boundary
 export { LoadingState } from './components/feedback/loading-state.js';
 export { ErrorState } from './components/feedback/error-state.js';
+export type { ErrorStateProps } from './components/feedback/error-state.js';
 export { EmptyState } from './components/feedback/empty-state.js';
 export { NotFoundState } from './components/feedback/not-found-state.js';
+export type { NotFoundStateProps } from './components/feedback/not-found-state.js';
 export { QueryBoundary } from './components/feedback/query-boundary.js';
 export type { QueryBoundaryProps } from './components/feedback/query-boundary.js';
 

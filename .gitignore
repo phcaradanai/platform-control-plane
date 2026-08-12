@@ -41,6 +41,7 @@ node_modules/
 dist
 dist-types
 build/
+storybook-static/
 
 # oh-my-claudecode local session state (not part of app source)
 .omc/

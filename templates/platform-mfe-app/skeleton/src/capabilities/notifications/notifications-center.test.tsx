@@ -7,7 +7,7 @@ import { NotificationsCenter } from './notifications-center';
 
 function renderCenter() {
   return render(
-    <ToastProvider>
+    <ToastProvider dismissLabel="Dismiss notification">
       <NotificationsCenter />
     </ToastProvider>,
   );

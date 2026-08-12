@@ -32,9 +32,7 @@ const columns: ColumnDef<DemoRow>[] = [
       const value = info.getValue<DemoRow['status']>();
       return (
         <Badge
-          variant={
-            value === 'active' ? 'success' : value === 'pending' ? 'secondary' : 'outline'
-          }
+          variant={value === 'active' ? 'success' : value === 'pending' ? 'secondary' : 'outline'}
         >
           {value}
         </Badge>
@@ -98,6 +96,9 @@ export function VirtualizedTable() {
   return (
     <QueryBoundary
       query={query}
+      loadingLabel="Loading rows"
+      errorTitle="Rows could not be loaded"
+      retryLabel="Try again"
       empty={{
         title: 'No rows match the current filter',
         description: 'Clear the status filter to see all rows.',

@@ -22,8 +22,10 @@ export function HealthStatus() {
       <div className="mt-4">
         <QueryBoundary
           query={query}
+          loadingLabel="Loading health status"
           empty={{ title: 'No health data' }}
           errorTitle="Health check failed"
+          retryLabel="Try again"
         >
           {health => (
             <div className="flex items-center justify-between text-sm">
