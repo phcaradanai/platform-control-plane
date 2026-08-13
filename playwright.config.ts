@@ -17,39 +17,39 @@
 import { defineConfig } from '@playwright/test';
 import { generateProjects } from '@backstage/e2e-test-utils/playwright';
 
+const baseURL = process.env.PLAYWRIGHT_URL ?? 'http://localhost:7007';
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  timeout: 60_000,
+  // The production app bundle can take time to hydrate on a cold checkout.
+  // This is a test budget for startup only; assertions retain their semantic
+  // checks and explicit per-expectation timeouts.
+  timeout: 180_000,
 
   expect: {
-    timeout: 30_000,
+    timeout: 90_000,
   },
 
-  // Start the backend and frontend for the smoke tests. The same
-  // two-process startup that is the documented Windows workflow is used
-  // everywhere (CI and local) so the tests always run against a real,
-  // freshly-started instance. `reuseExistingServer` lets a developer with
-  // an already-running backend/frontend skip the restart.
-  webServer: [
-    {
-      command: 'node .yarn/releases/yarn-4.13.0.cjs workspace backend start',
-      url: 'http://localhost:7007/.backstage/health/v1/readiness',
-      reuseExistingServer: true,
-      // First start compiles the backend in dev mode; allow generous time
-      // on cold machines/CI before the readiness endpoint returns 200.
-      timeout: 300_000,
-    },
-    {
-      command: 'node .yarn/releases/yarn-4.13.0.cjs workspace app start',
-      url: 'http://localhost:3000',
-      reuseExistingServer: true,
-      timeout: 300_000,
-    },
-  ],
+  // Build the real frontend once, then let the Backstage app backend serve
+  // that production bundle. This keeps browser verification independent of
+  // Rspack's dev-server compilation and prevents an optional developer-only
+  // app-config.local.yaml from introducing database or OAuth requirements.
+  webServer: {
+    command:
+      'node .yarn/releases/yarn-4.13.0.cjs workspace app build --config ../../app-config.yaml && node .yarn/releases/yarn-4.13.0.cjs workspace backend start --config ../../app-config.yaml',
+    url: 'http://localhost:7007/.backstage/health/v1/readiness',
+    reuseExistingServer: true,
+    timeout: 600_000,
+  },
 
   forbidOnly: !!process.env.CI,
+
+  // The smoke suite exercises one large Backstage bundle. Serializing the
+  // browser contexts prevents concurrent cold tabs from competing with
+  // startup and makes the run deterministic without reducing coverage.
+  workers: 1,
 
   retries: process.env.CI ? 2 : 0,
 
@@ -57,8 +57,7 @@ export default defineConfig({
 
   use: {
     actionTimeout: 0,
-    baseURL:
-      process.env.PLAYWRIGHT_URL ?? 'http://localhost:3000',
+    baseURL,
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },

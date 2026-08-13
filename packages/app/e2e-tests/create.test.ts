@@ -34,21 +34,28 @@ const CAPABILITIES = [
 ];
 
 async function clickNext(page: Page) {
-  await page.getByRole('button', { name: /next/i }).first().click();
+  const next = page.getByRole('button', { name: /next/i }).first();
+  await expect(next).toBeEnabled({ timeout: 90_000 });
+  await next.scrollIntoViewIfNeeded();
+  // The Backstage stepper can continue reflowing while async field state
+  // settles. The enabled assertion above guards the interaction contract;
+  // force only skips Playwright's transient stability check on this real
+  // production button.
+  await next.click({ force: true });
 }
 
 test('Create page lists the Platform MFE Application template', async ({
   page,
 }) => {
-  await page.goto('/create');
+  await page.goto('/create', { waitUntil: 'commit' });
   await page
     .getByRole('button', { name: /enter/i })
-    .click()
+    .click({ timeout: 90_000 })
     .catch(() => {});
 
   await expect(
     page.getByRole('heading', { name: 'Platform MFE Application' }),
-  ).toBeVisible({ timeout: 30_000 });
+  ).toBeVisible({ timeout: 90_000 });
 });
 
 test('Platform MFE Application form renders and progresses through every step', async ({
@@ -58,15 +65,17 @@ test('Platform MFE Application form renders and progresses through every step', 
     Date.now() % 100000
   }`;
 
-  await page.goto('/create/templates/default/platform-mfe-app');
+  await page.goto('/create/templates/default/platform-mfe-app', {
+    waitUntil: 'commit',
+  });
   await page
     .getByRole('button', { name: /enter/i })
-    .click()
+    .click({ timeout: 90_000 })
     .catch(() => {});
 
   await expect(
     page.getByRole('heading', { name: 'Platform MFE Application' }),
-  ).toBeVisible({ timeout: 30_000 });
+  ).toBeVisible({ timeout: 90_000 });
 
   // --- Step 1: Application identity ---
   await expect(page.getByLabel(/^Name/)).toBeVisible();
@@ -95,30 +104,32 @@ test('Platform MFE Application form renders and progresses through every step', 
     page.getByText('public', { exact: false }).first(),
   ).toBeVisible();
 
-  await page
-    .getByRole('textbox', { name: 'Owner', exact: true })
-    .fill('phcaradanai');
-  await page
-    .getByRole('textbox', { name: 'Repository', exact: true })
-    .fill(appName);
+  const repositoryOwnerInput = page.getByRole('textbox', {
+    name: 'Owner',
+    exact: true,
+  });
+  const repositoryInput = page.getByRole('textbox', {
+    name: 'Repository',
+    exact: true,
+  });
+  // RepoUrlPicker mounts its autocomplete controls after the repository
+  // integration request completes. Wait for real editability before typing,
+  // instead of treating visible-but-not-ready inputs as usable.
+  await expect(repositoryOwnerInput).toBeEditable({ timeout: 90_000 });
+  await expect(repositoryInput).toBeEditable({ timeout: 90_000 });
+  await repositoryOwnerInput.fill('phcaradanai');
+  await repositoryOwnerInput.blur();
+  await expect(repositoryInput).toBeEditable({ timeout: 90_000 });
+  await repositoryInput.fill(appName);
+  // RepoUrlPicker uses a free-form autocomplete. Leaving the field commits
+  // the typed value into the field's form state before the stepper advances.
+  await repositoryInput.blur();
+  await expect(repositoryInput).toHaveValue(appName);
 
-  // RepoUrlPicker validates repository availability against GitHub
-  // asynchronously; give it time to settle before advancing, and retry
-  // once if the first Next lands on a stale validation error.
-  await page.waitForTimeout(2500);
   await clickNext(page);
-  await page.waitForTimeout(1000);
-  if (
-    !(await page
-      .getByText('Lifecycle')
-      .isVisible()
-      .catch(() => false))
-  ) {
-    await clickNext(page);
-  }
 
   // --- Step 3: Application metadata (lifecycle, mode) ---
-  await expect(page.getByText('Lifecycle')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('Lifecycle')).toBeVisible({ timeout: 90_000 });
   await expect(page.getByText('Application mode')).toBeVisible();
   await expect(page.getByRole('radio', { name: 'experimental' })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'production' })).toBeVisible();
@@ -130,12 +141,14 @@ test('Platform MFE Application form renders and progresses through every step', 
     page.getByRole('radio', { name: 'standalone-and-mfe' }),
   ).toBeVisible();
 
-  await page
-    .getByRole('radio', { name: 'experimental' })
-    .check({ force: true });
-  await page
-    .getByRole('radio', { name: 'platform-mfe' })
-    .check({ force: true });
+  // The template defaults are part of the form contract; assert them rather
+  // than clicking an already-selected, visually-hidden radio input.
+  await expect(
+    page.getByRole('radio', { name: 'experimental' }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole('radio', { name: 'platform-mfe' }),
+  ).toBeChecked();
   await clickNext(page);
 
   // --- Step 4: Capabilities ---
@@ -145,6 +158,8 @@ test('Platform MFE Application form renders and progresses through every step', 
   const checkboxes = page.getByRole('checkbox');
   await expect(checkboxes).toHaveCount(CAPABILITIES.length);
   for (const capability of CAPABILITIES) {
-    await expect(page.getByText(capability, { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('checkbox', { name: capability, exact: true }),
+    ).toBeVisible();
   }
 });

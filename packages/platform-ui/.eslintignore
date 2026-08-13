@@ -1,0 +1,5 @@
+# Generated package output is validated by its build/typecheck contracts,
+# not by source lint. Keeping it out of ESLint also prevents minified
+# Storybook manager bundles from being parsed as application source.
+dist/
+storybook-static/
