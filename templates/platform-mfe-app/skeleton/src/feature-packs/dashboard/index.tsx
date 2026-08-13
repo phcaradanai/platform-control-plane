@@ -188,5 +188,7 @@ export const dashboardFeaturePack = {
     icon: LayoutDashboard,
   },
   screen: DashboardScreen,
-  dependencies: ['@platform/ui'],
+  dependencies: {
+    platform: ['@platform/ui'],
+  },
 } satisfies FeaturePack;

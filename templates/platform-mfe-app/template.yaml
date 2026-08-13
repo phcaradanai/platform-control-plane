@@ -8,8 +8,9 @@ metadata:
     Creates a GitHub repository for a new Platform MFE Application from a
     controlled skeleton and registers it in the Software Catalog. Runtime
     module federation and deployment are added in a later phase. A small,
-    representative set of frontend feature packs (dashboard and settings)
-    plus platform capabilities (notifications, i18n, observability) is
+    representative set of frontend feature packs (authentication, profile,
+    permissions, dashboard, and settings) plus platform capabilities
+    (notifications, i18n, observability) is
     composed into the generated application's code today - see
     docs/feature-packs.md and docs/capabilities.md.
 spec:
@@ -99,6 +100,34 @@ spec:
           ui:widget: radio
 
     - title: Capabilities
+      # Profile and permission UX consume the authentication identity context.
+      # These schema rules are the App Factory validation boundary: invalid
+      # combinations stop before a repository is generated.
+      allOf:
+        - if:
+            required:
+              - capabilities
+            properties:
+              capabilities:
+                contains:
+                  const: profile
+          then:
+            properties:
+              capabilities:
+                contains:
+                  const: authentication
+        - if:
+            required:
+              - capabilities
+            properties:
+              capabilities:
+                contains:
+                  const: rbac
+          then:
+            properties:
+              capabilities:
+                contains:
+                  const: authentication
       properties:
         capabilities:
           title: Requested capabilities
@@ -106,14 +135,16 @@ spec:
           description: >-
             Curated platform capabilities and frontend feature packs to
             request for this application. All selections are recorded in
-            platform-app.json. dashboard and settings compose real routes,
-            navigation, screens, and tests; notifications, i18n, and
-            observability compose platform integrations. The remaining
-            selections remain recorded for later phases.
+            platform-app.json. Authentication, profile, permissions, dashboard,
+            and settings compose real routes, navigation, screens, and tests;
+            notifications, i18n, and observability compose platform
+            integrations. Profile and permissions require authentication. The
+            remaining selections remain recorded for later phases.
           items:
             type: string
             enum:
               - authentication
+              - profile
               - rbac
               - dashboard
               - settings
@@ -182,7 +213,7 @@ spec:
     - id: pruneFeaturePacks
       name: Remove Unselected Feature Packs
       action: fs:delete
-      each: ['dashboard', 'settings']
+      each: ['authentication', 'profile', 'rbac', 'dashboard', 'settings']
       if: ${{ not (each.value in parameters.capabilities) }}
       input:
         files:

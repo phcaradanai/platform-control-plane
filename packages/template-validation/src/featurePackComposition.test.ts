@@ -68,18 +68,22 @@ function renderAndPrune(capabilities: string[]) {
 }
 
 function declaredDependencies(content: string): string[] {
-  const match = content.match(/dependencies:\s*\[([^\]]*)\]/);
-  return match
-    ? [...match[1].matchAll(/['"]([^'"]+)['"]/g)].map(result => result[1])
-    : [];
+  const match = content.match(/platform:\s*\[([^\]]*)\]/);
+  return match ? ['@platform/ui', '@platform/sdk'].filter(value => match[1].includes(value)) : [];
 }
 
 describe('frontend feature pack composition', () => {
-  it('uses one deterministic prune step for dashboard and settings', () => {
+  it('uses one deterministic prune step for all selectable feature packs', () => {
     expect(pruneStep.if).toBe(
       '${{ not (each.value in parameters.capabilities) }}',
     );
-    expect(pruneStep.each).toEqual(['dashboard', 'settings']);
+    expect(pruneStep.each).toEqual([
+      'authentication',
+      'profile',
+      'rbac',
+      'dashboard',
+      'settings',
+    ]);
     expect(pruneStep.input.files).toEqual([
       'src/feature-packs/${{ each.value }}/**',
       'src/routes/${{ each.value }}.tsx',
@@ -98,11 +102,26 @@ describe('frontend feature pack composition', () => {
 
   it.each([
     { name: 'App A: no optional packs', capabilities: [] },
-    { name: 'App B: dashboard only', capabilities: ['dashboard'] },
-    { name: 'App B2: settings only', capabilities: ['settings'] },
+    { name: 'App B0: authentication only', capabilities: ['authentication'] },
     {
-      name: 'App C: dashboard + settings',
-      capabilities: ['dashboard', 'settings'],
+      name: 'App B1: authentication + profile',
+      capabilities: ['authentication', 'profile'],
+    },
+    {
+      name: 'App B2: authentication + rbac',
+      capabilities: ['authentication', 'rbac'],
+    },
+    { name: 'App B: dashboard only', capabilities: ['dashboard'] },
+    { name: 'App C0: settings only', capabilities: ['settings'] },
+    {
+      name: 'App D: identity + dashboard + settings',
+      capabilities: [
+        'authentication',
+        'profile',
+        'rbac',
+        'dashboard',
+        'settings',
+      ],
     },
   ])('$name has only its selected pack code and routes', ({ capabilities }) => {
     const rendered = renderAndPrune(capabilities);
@@ -142,7 +161,13 @@ describe('frontend feature pack composition', () => {
   });
 
   it('composes both packs through the same application shell and shared UI package', () => {
-    const rendered = renderAndPrune(['dashboard', 'settings']);
+    const rendered = renderAndPrune([
+      'authentication',
+      'profile',
+      'rbac',
+      'dashboard',
+      'settings',
+    ]);
     expect(rendered.get('src/feature-packs/contract.ts')).toContain(
       "type PlatformDependency = '@platform/ui' | '@platform/sdk'",
     );
@@ -163,10 +188,20 @@ describe('frontend feature pack composition', () => {
     );
     expect(rendered.get('src/routes/settings.tsx')).toContain('SettingsScreen');
     expect(rendered.get('src/feature-packs/dashboard/index.tsx')).toContain(
-      "dependencies: ['@platform/ui']",
+      "platform: ['@platform/ui']",
     );
     expect(rendered.get('src/feature-packs/settings/index.tsx')).toContain(
-      "dependencies: ['@platform/ui']",
+      "platform: ['@platform/ui']",
+    );
+
+    expect(rendered.get('src/feature-packs/profile/index.tsx')).toContain(
+      "featurePacks: ['authentication']",
+    );
+    expect(rendered.get('src/feature-packs/rbac/index.tsx')).toContain(
+      "featurePacks: ['authentication']",
+    );
+    expect(rendered.get('src/feature-packs/registry.tsx')).toContain(
+      'validateFeaturePackDependencies',
     );
 
     const generatedPackage = JSON.parse(rendered.get('package.json')!);
@@ -183,13 +218,63 @@ describe('frontend feature pack composition', () => {
     }
   });
 
+  it('declares identity dependencies in the App Factory contract', () => {
+    const template = loadTemplate();
+    const capabilities = template.spec.parameters.find(
+      (parameter: { title: string }) => parameter.title === 'Capabilities',
+    );
+    expect(capabilities.allOf).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          if: expect.objectContaining({
+            properties: expect.objectContaining({
+              capabilities: expect.objectContaining({
+                contains: { const: 'profile' },
+              }),
+            }),
+          }),
+          then: expect.objectContaining({
+            properties: expect.objectContaining({
+              capabilities: expect.objectContaining({
+                contains: { const: 'authentication' },
+              }),
+            }),
+          }),
+        }),
+        expect.objectContaining({
+          if: expect.objectContaining({
+            properties: expect.objectContaining({
+              capabilities: expect.objectContaining({
+                contains: { const: 'rbac' },
+              }),
+            }),
+          }),
+          then: expect.objectContaining({
+            properties: expect.objectContaining({
+              capabilities: expect.objectContaining({
+                contains: { const: 'authentication' },
+              }),
+            }),
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('keeps verification routes out of product navigation and localizes shell text only when i18n is selected', () => {
     const base = renderAndPrune([]).get('src/components/layout/app-shell.tsx');
     expect(base).not.toContain("href: '/components'");
     expect(base).not.toContain("href: '/table'");
     expect(base).not.toContain("href: '/form'");
 
-    const withI18n = renderAndPrune(['i18n', 'dashboard', 'settings']);
+    const withI18n = renderAndPrune([
+      'i18n',
+      'authentication',
+      'profile',
+      'rbac',
+      'dashboard',
+      'settings',
+    ]);
     expect(withI18n.get('src/components/layout/app-shell.tsx')).toContain(
       'useI18n',
     );
@@ -232,6 +317,20 @@ describe('frontend feature pack composition', () => {
         file,
         hasSettingsReference: false,
       });
+      expect({
+        file,
+        hasAuthenticationReference: content.includes(
+          'feature-packs/authentication',
+        ),
+      }).toEqual({ file, hasAuthenticationReference: false });
+      expect({
+        file,
+        hasProfileReference: content.includes('feature-packs/profile'),
+      }).toEqual({ file, hasProfileReference: false });
+      expect({
+        file,
+        hasRbacReference: content.includes('feature-packs/rbac'),
+      }).toEqual({ file, hasRbacReference: false });
     }
   });
 });

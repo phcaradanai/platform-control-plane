@@ -12,7 +12,7 @@ Every generated pack follows `templates/platform-mfe-app/skeleton/src/feature-pa
 
 ```ts
 interface FeaturePack {
-  readonly id: string;
+  readonly id: 'authentication' | 'profile' | 'rbac' | 'dashboard' | 'settings';
   readonly route: `/${string}`;
   readonly navigation: {
     readonly label: string;
@@ -20,7 +20,10 @@ interface FeaturePack {
     readonly icon?: ComponentType<...>;
   };
   readonly screen: ComponentType;
-  readonly dependencies?: readonly ('@platform/ui' | '@platform/sdk')[];
+  readonly dependencies?: {
+    readonly platform?: readonly ('@platform/ui' | '@platform/sdk')[];
+    readonly featurePacks?: readonly FeaturePack['id'][];
+  };
   readonly documentation?: ReactNode;
 }
 ```
@@ -31,14 +34,20 @@ screen, standard-pattern composition, and its own interactions/tests. Packs do
 not own a backend, authentication policy, permission policy, tenant model, or
 business-domain data model.
 
-`dependencies` is a declarative, platform-only dependency contract. Each entry
-must be one of the explicitly allowlisted platform packages already available
-in the base skeleton: `@platform/ui` or `@platform/sdk`. A pack cannot request
-arbitrary npm packages, mutate the generated lockfile, or trigger an install
-during scaffolding. The App Factory owns the package manifest. Feature-pack-to-
-feature-pack dependencies are not supported yet; a future pack that needs
-another pack must make that relationship an explicit, validated selection
-rather than silently importing an unselected screen.
+`dependencies.platform` is an allowlisted declaration of packages already
+available in the base skeleton. `dependencies.featurePacks` is an explicit
+dependency on another selected pack. The registry validates it at startup and
+the App Factory schema rejects Profile or RBAC selections without
+Authentication. There is no implicit import of an unselected pack.
+
+`dependencies.platform` is a declarative, platform-only dependency contract.
+Each entry must be one of the explicitly allowlisted platform packages already
+available in the base skeleton: `@platform/ui` or `@platform/sdk`. A pack
+cannot request arbitrary npm packages, mutate the generated lockfile, or
+trigger an install during scaffolding. The App Factory owns the package
+manifest. `dependencies.featurePacks` is the explicit, validated selection
+contract for a pack-to-pack dependency; it never silently imports an
+unselected screen.
 
 ## Implemented packs
 
@@ -46,11 +55,14 @@ rather than silently importing an unselected screen.
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | `dashboard` | `/dashboard`, shell navigation, neutral summary metrics, range selector, responsive data table, pending refresh state        | local illustrative rows are replaced by a product query/API contract |
 | `settings`  | `/settings`, shell navigation, responsive settings layout, accessible form sections, switches, pending save and saved status | local component state is replaced by a product preference API        |
+| `authentication` | `/authentication`, signed-out/signing-in/authenticated/error/unavailable states, logout, return-path handling, UX-only auth gate | `@platform/sdk` `AuthAdapter`; a provider/backend is still required and API security remains authoritative |
+| `profile` | `/profile`, current-user summary, generic identity details, account action boundary, loading/error/signed-out states | requires `authentication`; identity fields come from `PlatformUser`, domain profile fields stay product-owned |
+| `rbac` | `/rbac`, permission-aware route/action checks, permitted/partial/denied/unavailable states, neutral management boundary | requires `authentication`; uses `PermissionsAdapter` checks, not role-name comparisons |
 
-Both packs compose `@platform/ui`'s `ApplicationPage`, `PageHeader`,
-`PageSection`, `DataTable`, `FormPage`, `FormSection`, `FormField`, and
-`SettingsLayout`. They do not recreate shared primitives or application shell
-foundation.
+All packs compose `@platform/ui`'s application patterns and primitives. They
+do not recreate shared primitives or application shell foundation. Identity
+packs use `@platform/sdk` for session and permission contracts and keep
+provider-specific behavior outside the pack.
 
 ## Composition and pruning
 
@@ -90,10 +102,16 @@ form behavior without promoting those demos into a product feature pack.
 ## Verified configurations
 
 - App A: `[]` — base application only; no feature-pack routes or imports.
-- App B: `['dashboard']` — dashboard route, navigation, screen, and tests.
-- App B2: `['settings']` — settings route, navigation, screen, and tests.
-- App C: `['dashboard', 'settings']` — both packs compose through one shell and
-  shared patterns without conflicts.
+- App B: `['authentication']` — authentication route, navigation, screen, and tests.
+- App C: `['authentication', 'profile']` — Profile resolves its explicit
+  Authentication dependency.
+- App D: `['authentication', 'rbac']` — RBAC resolves its explicit
+  Authentication dependency.
+- App E: `['authentication', 'profile', 'rbac', 'dashboard', 'settings']` — all
+  representative packs compose through one shell and shared patterns.
+
+`['profile']` and `['rbac']` without `['authentication']` are invalid App
+Factory selections and are rejected before repository publication.
 
 The Design System Portal imports the same skeleton pack implementations used
 by generated apps. Its `Feature packs` stories cover each pack independently
@@ -107,7 +125,9 @@ narrow responsive behavior reviewable without a duplicate demo implementation.
 2. Use existing `@platform/ui` patterns and keep sample data explicitly
    illustrative and replaceable.
 3. Add a route module under `src/routes/<id>.tsx`.
-4. Add the id to `template.yaml`'s curated enum and `pruneFeaturePacks.each`.
+4. Add the id to `template.yaml`'s curated enum and `pruneFeaturePacks.each`;
+   if it depends on another pack, add both the schema validation and the
+   `dependencies.featurePacks` declaration.
 5. Add the guarded registry and route-tree entries.
 6. Add a Portal story that imports the real skeleton implementation.
 7. Extend `featurePackComposition.test.ts` with no-pack, single-pack, and

@@ -56,6 +56,14 @@ export default tseslint.config(
       'react-refresh/only-export-components': 'off',
     },
   },
+  // Feature packs export their screen and pack descriptor together so the
+  // registry can compose routes and navigation from one contract object.
+  {
+    files: ['src/feature-packs/**'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
   // TanStack Table's useReactTable is a documented false positive for
   // react-hooks/incompatible-library: it returns a memoized object, not
   // functions, so React Compiler's heuristic misfires. Disable for the

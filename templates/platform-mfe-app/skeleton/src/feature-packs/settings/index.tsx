@@ -195,5 +195,7 @@ export const settingsFeaturePack = {
     icon: Settings2,
   },
   screen: SettingsScreen,
-  dependencies: ['@platform/ui'],
+  dependencies: {
+    platform: ['@platform/ui'],
+  },
 } satisfies FeaturePack;

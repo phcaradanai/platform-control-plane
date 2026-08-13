@@ -7,6 +7,7 @@ import { renderSkeleton } from './renderSkeleton';
 
 const CURATED_CAPABILITIES = [
   'authentication',
+  'profile',
   'rbac',
   'dashboard',
   'settings',
@@ -22,7 +23,13 @@ const CURATED_CAPABILITIES = [
   'mobile-ready',
 ];
 
-const SELECTED_CAPABILITIES = ['authentication', 'rbac', 'dashboard'];
+const SELECTED_CAPABILITIES = [
+  'authentication',
+  'profile',
+  'rbac',
+  'dashboard',
+  'settings',
+];
 
 const SAMPLE_VALUES = {
   name: 'sample-app',

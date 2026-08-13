@@ -52,6 +52,11 @@ A production-ready React frontend boilerplate:
   focus-visible rings, keyboard-operable controls, and
   `prefers-reduced-motion` support.
 - **Responsive layout** — mobile-first shell in `src/components/layout/`.
+- **Identity and access UX** — when selected, Authentication, Profile, and
+  Permissions packs compose provider-neutral sign-in, current-user, route
+  guard, denied, and permission-aware action states through `@platform/sdk`.
+  They fail clearly when no real adapter is configured; they do not provide
+  backend security.
 
 ## Running
 
@@ -94,7 +99,7 @@ Requested capabilities (recorded in `platform-app.json`):
 
 ${{ values.capabilities | dump }}
 
-{% set featurePacks = ['dashboard', 'settings'] %}
+{% set featurePacks = ['authentication', 'profile', 'rbac', 'dashboard', 'settings'] %}
 {% set composedCapabilities = ['notifications', 'i18n', 'observability'] %}
 The following **frontend feature packs** are composed — each adds a working
 route, shell navigation entry, standard-pattern screen, interactions, and
@@ -119,7 +124,7 @@ phase but are not yet installed or configured:
 - `platform-app.json` `runtime.status` is `not-configured` — no Module
   Federation host/remote wiring exists yet.
 - Requested capabilities outside the composed platform capabilities and
-  `dashboard` / `settings` are recorded only — nothing beyond
+  frontend Feature Packs are recorded only — nothing beyond
   `platform-app.json` reflects them yet. They exist so a later composition
   phase knows what to add.
 - The health endpoint (`/health` under `VITE_API_BASE_URL`) is an example

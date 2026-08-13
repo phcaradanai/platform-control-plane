@@ -24,25 +24,39 @@ export interface PlatformUser {
   id: string;
   displayName?: string;
   email?: string;
+  avatarUrl?: string;
+}
+
+export type AuthPhase = 'idle' | 'pending' | 'error';
+
+export interface AuthSignInOptions {
+  /** A same-origin path to return to after a provider completes sign-in. */
+  returnPath?: string;
 }
 
 export interface AuthState {
   status: 'ready' | 'unavailable';
   /** Present only when `status` is "unavailable"; explains why, for user-facing fallback UI. */
   reason?: string;
+  /** Provider action state; this is independent from provider availability. */
+  phase: AuthPhase;
+  /** Present when the provider reports a recoverable authentication error. */
+  error?: string;
   isAuthenticated: boolean;
   user: PlatformUser | null;
   /** Rejects with {@link PlatformCapabilityUnavailableError} when `status` is "unavailable". */
-  signIn: () => Promise<void>;
+  signIn: (options?: AuthSignInOptions) => Promise<void>;
   /** Rejects with {@link PlatformCapabilityUnavailableError} when `status` is "unavailable". */
   signOut: () => Promise<void>;
 }
+
+export type PermissionId = string;
 
 export interface PermissionsState {
   status: 'ready' | 'unavailable';
   reason?: string;
   /** Fails closed: always returns `false` when `status` is "unavailable". */
-  can: (permissionId: string) => boolean;
+  can: (permissionId: PermissionId) => boolean;
 }
 
 export interface TenantState {
