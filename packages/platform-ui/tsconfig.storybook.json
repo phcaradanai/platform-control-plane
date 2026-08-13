@@ -4,7 +4,11 @@
     "noEmit": true,
     "declaration": false,
     "declarationMap": false,
-    "rootDir": "."
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@platform/ui": ["./src/index.ts"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", ".storybook/**/*.ts"]
 }
