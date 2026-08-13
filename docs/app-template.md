@@ -14,7 +14,7 @@ Application** scaffolder template, registered in the catalog at
 | Repository           | `repoVisibility`                        | `private` (default) or `public`                                                                                      |
 | Application metadata | `lifecycle`                             | `experimental` or `production`                                                                                       |
 | Application metadata | `mode`                                  | `platform-mfe`, `standalone`, or `standalone-and-mfe`                                                                |
-| Capabilities         | `capabilities`                          | Multi-select checkboxes, restricted to the 14 curated identifiers below                                              |
+| Capabilities         | `capabilities`                          | Multi-select checkboxes, restricted to the 15 curated identifiers below                                              |
 
 The default branch is **not** a form field - it is hardcoded to `main` in
 the `publish` step's `defaultBranch` input, per the spec.
@@ -22,26 +22,28 @@ the `publish` step's `defaultBranch` input, per the spec.
 ### Curated capabilities
 
 ```text
-authentication, rbac, dashboard, settings, reports, history, audit-log,
+authentication, profile, rbac, dashboard, settings, reports, history, audit-log,
 notifications, tenant, theme, i18n, observability, desktop-ready,
 mobile-ready
 ```
 
 This is a closed enum in `template.yaml` - the form cannot submit any
 value outside this list, and there is no free-text field for package
-names or install commands anywhere in the template. `dashboard` and
-`settings` are frontend Feature Packs with real generated routes, navigation,
-screens, interactions, and tests; see [feature-packs.md](./feature-packs.md).
+names or install commands anywhere in the template. Authentication, Profile,
+RBAC, Dashboard, and Settings are frontend Feature Packs with real generated
+routes, navigation, screens, interactions, and tests; see
+[feature-packs.md](./feature-packs.md).
 
 Three platform capabilities (`notifications`, `i18n`, `observability`) and
-two frontend Feature Packs (`dashboard`, `settings`) are **composed** into
-the generated application's code; the remaining nine selections remain
-recorded only in `platform-app.json`. See [capabilities.md](./capabilities.md)
+five frontend Feature Packs (`authentication`, `profile`, `rbac`, `dashboard`,
+`settings`) are **composed** into the generated application's code; the
+remaining seven selections remain recorded only in `platform-app.json`. See
+[capabilities.md](./capabilities.md)
 and [feature-packs.md](./feature-packs.md).
 
 ### `mode` has real runtime meaning (Phase 5)
 
-Unlike the nine recorded-only capabilities above, `mode` is not just
+Unlike the seven recorded-only capabilities above, `mode` is not just
 metadata: the generated app's own `main.tsx` resolves it against whatever
 platform host is present at boot (see
 [platform-sdk.md](./platform-sdk.md#standalone-vs-hosted) and
@@ -135,10 +137,10 @@ because plain interpolation of an array produces a comma-joined string
 `runtime.status` is always `not-configured` - no Module Federation runtime
 is installed or wired up by this phase. As of Phase 4, `notifications`,
 `i18n`, and `observability` are composed into `src/capabilities/` when
-selected, while `dashboard` and `settings` are composed into
-`src/feature-packs/` (see [capabilities.md](./capabilities.md) and
-[feature-packs.md](./feature-packs.md)); the other nine curated capabilities
-remain recorded only. The generated README explicitly
+selected, while Authentication, Profile, RBAC, Dashboard, and Settings are
+composed into `src/feature-packs/` (see [capabilities.md](./capabilities.md)
+and [feature-packs.md](./feature-packs.md)); the other seven curated
+capabilities remain recorded only. The generated README explicitly
 lists what was generated, which requested capabilities are composed versus
 recorded only, how to run validation (`npm ci && npm run typecheck && npm
 run build`), and that Module Federation integration is a later phase.

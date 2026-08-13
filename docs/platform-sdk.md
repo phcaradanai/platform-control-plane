@@ -15,7 +15,7 @@ The SDK defines six contracts:
 | Application identity | `usePlatformApp()` | Yes |
 | Runtime information | `usePlatformRuntime()` | Yes |
 | Navigation | `useNavigation()` | Yes (browser History API fallback) |
-| Auth/session | `useAuth()` | No - reports `unavailable` until a provider is wired up |
+| Auth/session | `useAuth()` | No - reports `unavailable` until a provider is wired up; exposes action phase and return-path options |
 | Permissions | `usePermissions()` | No - fails closed (`can()` returns `false`) until a provider is wired up |
 | Tenant context | `useTenant()` | No - reports `unavailable` until a provider is wired up |
 
@@ -24,7 +24,9 @@ external dependency, so they always work standalone. Auth, permissions,
 and tenant are real platform capabilities this phase deliberately does
 **not** implement (no Keycloak, RBAC backend, or tenant system yet) - the
 SDK's job here is to define the shape those capabilities will have, and to
-behave predictably in their absence, not to fake them.
+behave predictably in their absence, not to fake them. The Authentication,
+Profile, and Permission/RBAC Feature Packs consume these contracts without
+providing an identity provider or security authority.
 
 ## Usage
 
@@ -100,6 +102,12 @@ When `status` is `'unavailable'`:
 This is the "clear behavior when a platform capability/provider is
 unavailable" every consumer can rely on, rather than each app inventing
 its own null-checking convention.
+
+When auth is ready, `useAuth()` also exposes `phase: 'idle' | 'pending' |
+'error'`, an optional provider error, and `signIn({ returnPath })`. The return
+path is a path-only UX hint for the provider; feature packs sanitize it to a
+same-origin path and the provider/backend remains responsible for the real
+redirect.
 
 ## Standalone vs. hosted
 

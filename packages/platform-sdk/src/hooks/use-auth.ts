@@ -15,6 +15,7 @@ export function useAuth(): AuthState {
     return {
       status: 'unavailable',
       reason: 'No authentication provider is configured for this application.',
+      phase: 'idle',
       isAuthenticated: false,
       user: null,
       signIn: adapters.auth.signIn,
@@ -24,6 +25,8 @@ export function useAuth(): AuthState {
 
   return {
     status: 'ready',
+    phase: snapshot.phase ?? 'idle',
+    error: snapshot.error,
     isAuthenticated: snapshot.isAuthenticated,
     user: snapshot.user,
     signIn: adapters.auth.signIn,

@@ -13,8 +13,21 @@ import type { LucideIcon } from 'lucide-react';
  */
 export type PlatformDependency = '@platform/ui' | '@platform/sdk';
 
+/** Feature-pack ids are closed at the App Factory boundary. */
+export type FeaturePackId =
+  | 'authentication'
+  | 'profile'
+  | 'rbac'
+  | 'dashboard'
+  | 'settings';
+
+export interface FeaturePackDependencies {
+  readonly platform?: readonly PlatformDependency[];
+  readonly featurePacks?: readonly FeaturePackId[];
+}
+
 export interface FeaturePack {
-  readonly id: string;
+  readonly id: FeaturePackId;
   readonly route: `/${string}`;
   readonly navigation: {
     readonly label: string;
@@ -22,6 +35,30 @@ export interface FeaturePack {
     readonly icon?: LucideIcon;
   };
   readonly screen: ComponentType;
-  readonly dependencies?: readonly PlatformDependency[];
+  readonly dependencies?: FeaturePackDependencies;
   readonly documentation?: ReactNode;
+}
+
+/**
+ * Validates the selected registry at the generated-app boundary. The
+ * scaffolder schema prevents invalid standard combinations, while this
+ * runtime check keeps hand-edited `platform-app.json`/registry changes from
+ * silently importing a pack without its declared identity dependency.
+ */
+export function validateFeaturePackDependencies(
+  packs: readonly FeaturePack[],
+): readonly FeaturePack[] {
+  const selected = new Set(packs.map(pack => pack.id));
+
+  for (const pack of packs) {
+    for (const dependency of pack.dependencies?.featurePacks ?? []) {
+      if (!selected.has(dependency)) {
+        throw new Error(
+          `Feature pack "${pack.id}" requires selected feature pack "${dependency}".`,
+        );
+      }
+    }
+  }
+
+  return packs;
 }

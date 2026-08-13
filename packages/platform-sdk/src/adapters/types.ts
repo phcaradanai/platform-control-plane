@@ -1,4 +1,9 @@
-import type { PlatformUser } from '../types.js';
+import type {
+  AuthPhase,
+  AuthSignInOptions,
+  PermissionId,
+  PlatformUser,
+} from '../types.js';
 
 /**
  * Adapters are the extension point between the SDK's stable hook contracts and
@@ -19,14 +24,17 @@ export interface AuthAdapter {
   getSnapshot: () => {
     isAuthenticated: boolean;
     user: PlatformUser | null;
+    /** Optional for backwards-compatible host adapters; defaults to `idle`. */
+    phase?: AuthPhase;
+    error?: string;
   } | null;
   subscribe: (onChange: () => void) => () => void;
-  signIn: () => Promise<void>;
+  signIn: (options?: AuthSignInOptions) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 export interface PermissionsAdapter {
-  getSnapshot: () => { can: (permissionId: string) => boolean } | null;
+  getSnapshot: () => { can: (permissionId: PermissionId) => boolean } | null;
   subscribe: (onChange: () => void) => () => void;
 }
 

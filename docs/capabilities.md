@@ -13,9 +13,9 @@ rationale and the alternatives that were ruled out.
 ## Composed vs recorded-only
 
 `templates/platform-mfe-app/template.yaml`'s `capabilities` field is a
-closed, 14-item enum (see [app-template.md](./app-template.md)). Every
+closed, 15-item enum (see [app-template.md](./app-template.md)). Every
 selection is recorded in the generated `platform-app.json`, unchanged from
-earlier phases. As of Phase 4, three of the fourteen are additionally
+earlier phases. Three infrastructure capabilities are additionally
 **composed** - they deterministically add real files, wiring, and (gated)
 UI to the generated application:
 
@@ -24,12 +24,13 @@ UI to the generated application:
 | `notifications`                                                                                                 | **Composed**  | `src/capabilities/notifications/` - a header bell menu with demo notifications and a "send test notification" button that fires a toast through `@platform/ui`'s existing `ToastProvider`.                                                                                                             |
 | `i18n`                                                                                                          | **Composed**  | `src/capabilities/i18n/` - an `I18nProvider`/`useI18n()` context (2 locales) and a header `LanguageSwitcher`.                                                                                                                                                                                          |
 | `observability`                                                                                                 | **Composed**  | `src/capabilities/observability/` - `window.onerror`/`unhandledrejection` capture plus a `trackEvent()`/sink API, initialized in `main.tsx`.                                                                                                                                                           |
-| `authentication`, `rbac`, `reports`, `history`, `audit-log`, `tenant`, `theme`, `desktop-ready`, `mobile-ready` | Recorded only | Present in `platform-app.json.capabilities`; no generated code yet. Deferred to later phases - most require infrastructure explicitly out of scope (a real IdP for `authentication`/`rbac`, a tenant backend for `tenant`, or Module Federation/Super App runtime for `desktop-ready`/`mobile-ready`). |
+| `reports`, `history`, `audit-log`, `tenant`, `theme`, `desktop-ready`, `mobile-ready` | Recorded only | Present in `platform-app.json.capabilities`; no generated code yet. Deferred to later phases - most require infrastructure explicitly out of scope (backend contracts for reports/history/tenant, or Module Federation/Super App runtime for desktop/mobile). |
 
-The `dashboard` and `settings` selections are frontend Feature Packs rather
-than infrastructure capabilities. They compose routes, shell navigation,
-pattern-based screens, interactions, and tests through the same mechanism;
-their contract and pruning rules are documented in
+The `authentication`, `profile`, `rbac`, `dashboard`, and `settings`
+selections are frontend Feature Packs rather than infrastructure capabilities.
+They compose routes, shell navigation, pattern-based screens, interactions,
+and tests through the same mechanism; their contract and pruning rules are
+documented in
 [feature-packs.md](./feature-packs.md).
 
 `theme` is not composed as a _toggle_ because it isn't optional: every
@@ -38,7 +39,7 @@ generated app already ships `@platform/ui`'s `ThemeProvider` unconditionally
 making it removable, which isn't the goal - selecting it is a no-op
 today and it stays in the recorded-only list.
 
-## Why only three, and why these three
+## Why the infrastructure capability set remains small
 
 The composition mechanism (below) has one hard constraint: **a composed
 capability may add files and wire extension points, but it may not add npm

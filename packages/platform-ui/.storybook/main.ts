@@ -42,6 +42,28 @@ const viteFinal: NonNullable<StorybookConfig['viteFinal']> = async viteConfig =>
           replacement: path.join(featurePackSourceDir, 'settings/index.tsx'),
         },
         {
+          find: '@platform/feature-packs/authentication',
+          replacement: path.join(
+            featurePackSourceDir,
+            'authentication/index.tsx',
+          ),
+        },
+        {
+          find: '@platform/feature-packs/profile',
+          replacement: path.join(featurePackSourceDir, 'profile/index.tsx'),
+        },
+        {
+          find: '@platform/feature-packs/rbac',
+          replacement: path.join(featurePackSourceDir, 'rbac/index.tsx'),
+        },
+        {
+          find: '@platform/sdk',
+          replacement: path.join(
+            repoRoot,
+            'packages/platform-sdk/src/index.ts',
+          ),
+        },
+        {
           find: '@platform/ui/theme.css',
           replacement: path.join(sourceDir, 'styles/theme.css'),
         },
