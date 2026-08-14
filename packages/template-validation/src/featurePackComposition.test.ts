@@ -69,7 +69,11 @@ function renderAndPrune(capabilities: string[]) {
 
 function declaredDependencies(content: string): string[] {
   const match = content.match(/platform:\s*\[([^\]]*)\]/);
-  return match ? ['@platform/ui', '@platform/sdk'].filter(value => match[1].includes(value)) : [];
+  return match
+    ? ['@platform/ui', '@platform/sdk'].filter(value =>
+        match[1].includes(value),
+      )
+    : [];
 }
 
 describe('frontend feature pack composition', () => {
@@ -83,6 +87,9 @@ describe('frontend feature pack composition', () => {
       'rbac',
       'dashboard',
       'settings',
+      'reports',
+      'history',
+      'audit-log',
     ]);
     expect(pruneStep.input.files).toEqual([
       'src/feature-packs/${{ each.value }}/**',
@@ -121,6 +128,25 @@ describe('frontend feature pack composition', () => {
         'rbac',
         'dashboard',
         'settings',
+      ],
+    },
+    { name: 'App E: reports only', capabilities: ['reports'] },
+    { name: 'App F: history only', capabilities: ['history'] },
+    {
+      name: 'App G: authentication + rbac + audit log',
+      capabilities: ['authentication', 'rbac', 'audit-log'],
+    },
+    {
+      name: 'App H: full operational composition',
+      capabilities: [
+        'authentication',
+        'profile',
+        'rbac',
+        'dashboard',
+        'settings',
+        'reports',
+        'history',
+        'audit-log',
       ],
     },
   ])('$name has only its selected pack code and routes', ({ capabilities }) => {
@@ -167,6 +193,9 @@ describe('frontend feature pack composition', () => {
       'rbac',
       'dashboard',
       'settings',
+      'reports',
+      'history',
+      'audit-log',
     ]);
     expect(rendered.get('src/feature-packs/contract.ts')).toContain(
       "type PlatformDependency = '@platform/ui' | '@platform/sdk'",
@@ -199,6 +228,23 @@ describe('frontend feature pack composition', () => {
     );
     expect(rendered.get('src/feature-packs/rbac/index.tsx')).toContain(
       "featurePacks: ['authentication']",
+    );
+    expect(rendered.get('src/feature-packs/audit-log/index.tsx')).toContain(
+      "featurePacks: ['authentication', 'rbac']",
+    );
+    expect(rendered.get('src/feature-packs/reports/index.tsx')).toContain(
+      'ReportsDataSource',
+    );
+    expect(rendered.get('src/feature-packs/history/index.tsx')).toContain(
+      'HistoryDataSource',
+    );
+    expect(rendered.get('src/feature-packs/audit-log/index.tsx')).toContain(
+      'AuditLogDataSource',
+    );
+    expect(rendered.get('src/routes/reports.tsx')).toContain('ReportsScreen');
+    expect(rendered.get('src/routes/history.tsx')).toContain('HistoryScreen');
+    expect(rendered.get('src/routes/audit-log.tsx')).toContain(
+      'AuditLogScreen',
     );
     expect(rendered.get('src/feature-packs/registry.tsx')).toContain(
       'validateFeaturePackDependencies',
@@ -253,6 +299,43 @@ describe('frontend feature pack composition', () => {
             properties: expect.objectContaining({
               capabilities: expect.objectContaining({
                 contains: { const: 'authentication' },
+              }),
+            }),
+          }),
+        }),
+      ]),
+    );
+
+    expect(capabilities.allOf).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          if: expect.objectContaining({
+            properties: expect.objectContaining({
+              capabilities: expect.objectContaining({
+                contains: { const: 'audit-log' },
+              }),
+            }),
+          }),
+          then: expect.objectContaining({
+            properties: expect.objectContaining({
+              capabilities: expect.objectContaining({
+                contains: { const: 'authentication' },
+              }),
+            }),
+          }),
+        }),
+        expect.objectContaining({
+          if: expect.objectContaining({
+            properties: expect.objectContaining({
+              capabilities: expect.objectContaining({
+                contains: { const: 'audit-log' },
+              }),
+            }),
+          }),
+          then: expect.objectContaining({
+            properties: expect.objectContaining({
+              capabilities: expect.objectContaining({
+                contains: { const: 'rbac' },
               }),
             }),
           }),
@@ -331,6 +414,18 @@ describe('frontend feature pack composition', () => {
         file,
         hasRbacReference: content.includes('feature-packs/rbac'),
       }).toEqual({ file, hasRbacReference: false });
+      expect({
+        file,
+        hasReportsReference: content.includes('feature-packs/reports'),
+      }).toEqual({ file, hasReportsReference: false });
+      expect({
+        file,
+        hasHistoryReference: content.includes('feature-packs/history'),
+      }).toEqual({ file, hasHistoryReference: false });
+      expect({
+        file,
+        hasAuditLogReference: content.includes('feature-packs/audit-log'),
+      }).toEqual({ file, hasAuditLogReference: false });
     }
   });
 });

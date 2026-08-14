@@ -111,3 +111,71 @@ test('Settings pack is absent when it is not selected', async ({ page }) => {
   ).toBeVisible();
 });
 {% endif %}
+
+{% if 'reports' in values.capabilities %}
+test('Reports pack composes its catalog and navigation', async ({ page }) => {
+  await page.goto('/reports');
+  await expect(
+    page.getByRole('heading', { name: 'Reports', level: 1 }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Application navigation' })
+      .getByRole('link', { name: 'Reports' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /^Work overview/ }),
+  ).toBeVisible();
+});
+{% else %}
+test('Reports pack is absent when it is not selected', async ({ page }) => {
+  await page.goto('/reports');
+  await expect(
+    page.getByRole('heading', { name: 'Page not found', level: 1 }),
+  ).toBeVisible();
+});
+{% endif %}
+
+{% if 'history' in values.capabilities %}
+test('History pack composes its activity view and navigation', async ({ page }) => {
+  await page.goto('/history');
+  await expect(
+    page.getByRole('heading', { name: 'History', level: 1 }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Application navigation' })
+      .getByRole('link', { name: 'History' }),
+  ).toBeVisible();
+  await expect(page.getByText('Application preferences updated')).toBeVisible();
+});
+{% else %}
+test('History pack is absent when it is not selected', async ({ page }) => {
+  await page.goto('/history');
+  await expect(
+    page.getByRole('heading', { name: 'Page not found', level: 1 }),
+  ).toBeVisible();
+});
+{% endif %}
+
+{% if 'audit-log' in values.capabilities %}
+test('Audit Log pack composes its protected inspection route', async ({ page }) => {
+  await page.goto('/audit-log');
+  await expect(
+    page.getByRole('heading', { name: 'Audit log', level: 1 }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Application navigation' })
+      .getByRole('link', { name: 'Audit log' }),
+  ).toBeVisible();
+  await expect(page.getByText('Authentication unavailable')).toBeVisible();
+});
+{% else %}
+test('Audit Log pack is absent when it is not selected', async ({ page }) => {
+  await page.goto('/audit-log');
+  await expect(
+    page.getByRole('heading', { name: 'Page not found', level: 1 }),
+  ).toBeVisible();
+});
+{% endif %}

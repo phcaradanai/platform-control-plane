@@ -28,6 +28,9 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
     'navigation.rbac': 'Permissions',
     'navigation.dashboard': 'Dashboard',
     'navigation.settings': 'Settings',
+    'navigation.reports': 'Reports',
+    'navigation.history': 'History',
+    'navigation.audit-log': 'Audit log',
   },
   es: {
     'language.label': 'Idioma',
@@ -39,6 +42,9 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
     'navigation.rbac': 'Permisos',
     'navigation.dashboard': 'Panel',
     'navigation.settings': 'Configuración',
+    'navigation.reports': 'Informes',
+    'navigation.history': 'Historial',
+    'navigation.audit-log': 'Registro de auditoría',
   },
 };
 

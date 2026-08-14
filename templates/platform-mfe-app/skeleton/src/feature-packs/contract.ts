@@ -19,7 +19,10 @@ export type FeaturePackId =
   | 'profile'
   | 'rbac'
   | 'dashboard'
-  | 'settings';
+  | 'settings'
+  | 'reports'
+  | 'history'
+  | 'audit-log';
 
 export interface FeaturePackDependencies {
   readonly platform?: readonly PlatformDependency[];

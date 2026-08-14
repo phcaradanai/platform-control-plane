@@ -57,6 +57,11 @@ A production-ready React frontend boilerplate:
   guard, denied, and permission-aware action states through `@platform/sdk`.
   They fail clearly when no real adapter is configured; they do not provide
   backend security.
+- **Operational data UX** — when selected, Reports, History, and Audit Log add
+  real catalog/table/filter/detail flows using typed, replaceable data-source
+  contracts. Illustrative local sources make the generated UX usable without
+  pretending that reporting, event storage, audit persistence, export, or
+  backend authorization already exist.
 
 ## Running
 
@@ -99,7 +104,7 @@ Requested capabilities (recorded in `platform-app.json`):
 
 ${{ values.capabilities | dump }}
 
-{% set featurePacks = ['authentication', 'profile', 'rbac', 'dashboard', 'settings'] %}
+{% set featurePacks = ['authentication', 'profile', 'rbac', 'dashboard', 'settings', 'reports', 'history', 'audit-log'] %}
 {% set composedCapabilities = ['notifications', 'i18n', 'observability'] %}
 The following **frontend feature packs** are composed — each adds a working
 route, shell navigation entry, standard-pattern screen, interactions, and

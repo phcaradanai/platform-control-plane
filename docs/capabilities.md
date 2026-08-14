@@ -19,15 +19,19 @@ earlier phases. Three infrastructure capabilities are additionally
 **composed** - they deterministically add real files, wiring, and (gated)
 UI to the generated application:
 
-| Capability                                                                                                      | Status        | Composed effect                                                                                                                                                                                                                                                                                        |
-| --------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `notifications`                                                                                                 | **Composed**  | `src/capabilities/notifications/` - a header bell menu with demo notifications and a "send test notification" button that fires a toast through `@platform/ui`'s existing `ToastProvider`.                                                                                                             |
-| `i18n`                                                                                                          | **Composed**  | `src/capabilities/i18n/` - an `I18nProvider`/`useI18n()` context (2 locales) and a header `LanguageSwitcher`.                                                                                                                                                                                          |
-| `observability`                                                                                                 | **Composed**  | `src/capabilities/observability/` - `window.onerror`/`unhandledrejection` capture plus a `trackEvent()`/sink API, initialized in `main.tsx`.                                                                                                                                                           |
-| `reports`, `history`, `audit-log`, `tenant`, `theme`, `desktop-ready`, `mobile-ready` | Recorded only | Present in `platform-app.json.capabilities`; no generated code yet. Deferred to later phases - most require infrastructure explicitly out of scope (backend contracts for reports/history/tenant, or Module Federation/Super App runtime for desktop/mobile). |
+| Capability                                         | Status        | Composed effect                                                                                                                                                                                                   |
+| -------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `notifications`                                    | **Composed**  | `src/capabilities/notifications/` - a header bell menu with demo notifications and a "send test notification" button that fires a toast through `@platform/ui`'s existing `ToastProvider`.                        |
+| `i18n`                                             | **Composed**  | `src/capabilities/i18n/` - an `I18nProvider`/`useI18n()` context (2 locales) and a header `LanguageSwitcher`.                                                                                                     |
+| `observability`                                    | **Composed**  | `src/capabilities/observability/` - `window.onerror`/`unhandledrejection` capture plus a `trackEvent()`/sink API, initialized in `main.tsx`.                                                                      |
+| `tenant`, `theme`, `desktop-ready`, `mobile-ready` | Recorded only | Present in `platform-app.json.capabilities`; no generated code yet. Deferred to later phases because they require infrastructure explicitly out of scope (tenant backend or Module Federation/Super App runtime). |
 
-The `authentication`, `profile`, `rbac`, `dashboard`, and `settings`
-selections are frontend Feature Packs rather than infrastructure capabilities.
+The `authentication`, `profile`, `rbac`, `dashboard`, `settings`, `reports`,
+`history`, and `audit-log` selections are frontend Feature Packs rather than
+infrastructure capabilities. Reports, History, and Audit Log are documented
+in [feature-packs.md](./feature-packs.md) with explicit replaceable data
+contracts; selecting one does not create a backend or make illustrative data
+authoritative.
 They compose routes, shell navigation, pattern-based screens, interactions,
 and tests through the same mechanism; their contract and pruning rules are
 documented in

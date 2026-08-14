@@ -30,14 +30,16 @@ mobile-ready
 This is a closed enum in `template.yaml` - the form cannot submit any
 value outside this list, and there is no free-text field for package
 names or install commands anywhere in the template. Authentication, Profile,
-RBAC, Dashboard, and Settings are frontend Feature Packs with real generated
-routes, navigation, screens, interactions, and tests; see
+RBAC, Dashboard, Settings, Reports, History, and Audit Log are frontend
+Feature Packs with real generated routes, navigation, screens, interactions,
+and tests; see
 [feature-packs.md](./feature-packs.md).
 
 Three platform capabilities (`notifications`, `i18n`, `observability`) and
-five frontend Feature Packs (`authentication`, `profile`, `rbac`, `dashboard`,
-`settings`) are **composed** into the generated application's code; the
-remaining seven selections remain recorded only in `platform-app.json`. See
+eight frontend Feature Packs (`authentication`, `profile`, `rbac`, `dashboard`,
+`settings`, `reports`, `history`, `audit-log`) are **composed** into the
+generated application's code; the remaining four selections remain recorded
+only in `platform-app.json`. See
 [capabilities.md](./capabilities.md)
 and [feature-packs.md](./feature-packs.md).
 
@@ -75,8 +77,8 @@ implemented, per the spec's preference for built-ins.
 `src/capabilities/<id>/**` in the fetched working directory for each of
 `notifications`, `i18n`, and `observability` that wasn't selected. The
 following `pruneFeaturePacks` step removes both
-`src/feature-packs/<id>/**` and `src/routes/<id>.tsx` for unselected
-`dashboard` and `settings` packs. See [capabilities.md](./capabilities.md)
+`src/feature-packs/<id>/**` and `src/routes/<id>.tsx` for every unselected
+frontend pack. See [capabilities.md](./capabilities.md)
 and [feature-packs.md](./feature-packs.md) for the full composition model.
 
 `fetchBase` passes `copyWithoutTemplating: ['.github/workflows/**']`.
@@ -137,9 +139,9 @@ because plain interpolation of an array produces a comma-joined string
 `runtime.status` is always `not-configured` - no Module Federation runtime
 is installed or wired up by this phase. As of Phase 4, `notifications`,
 `i18n`, and `observability` are composed into `src/capabilities/` when
-selected, while Authentication, Profile, RBAC, Dashboard, and Settings are
-composed into `src/feature-packs/` (see [capabilities.md](./capabilities.md)
-and [feature-packs.md](./feature-packs.md)); the other seven curated
+selected, while all current frontend packs are composed into
+`src/feature-packs/` (see [capabilities.md](./capabilities.md) and
+[feature-packs.md](./feature-packs.md)); the other four curated
 capabilities remain recorded only. The generated README explicitly
 lists what was generated, which requested capabilities are composed versus
 recorded only, how to run validation (`npm ci && npm run typecheck && npm

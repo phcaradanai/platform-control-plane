@@ -29,6 +29,9 @@ const SELECTED_CAPABILITIES = [
   'rbac',
   'dashboard',
   'settings',
+  'reports',
+  'history',
+  'audit-log',
 ];
 
 const SAMPLE_VALUES = {

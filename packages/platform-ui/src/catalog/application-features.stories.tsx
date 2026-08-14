@@ -18,9 +18,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const futureFeatures = [
-  ['Reports', 'Filtering, export, and long-running work'],
-  ['History', 'Audit timeline and change context'],
-  ['Audit log', 'Change history and review context'],
+  ['Saved views', 'A later tranche may standardize reusable saved filters'],
+  ['Workflow queue', 'A later tranche may standardize queue and assignment UX'],
+  ['Import review', 'A later tranche may standardize staged import feedback'],
 ] as const;
 
 export const Reserved: Story = {

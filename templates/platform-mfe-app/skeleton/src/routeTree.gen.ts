@@ -28,6 +28,15 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 {% if 'settings' in values.capabilities %}
 import { Route as SettingsRouteImport } from './routes/settings'
 {% endif %}
+{% if 'reports' in values.capabilities %}
+import { Route as ReportsRouteImport } from './routes/reports'
+{% endif %}
+{% if 'history' in values.capabilities %}
+import { Route as HistoryRouteImport } from './routes/history'
+{% endif %}
+{% if 'audit-log' in values.capabilities %}
+import { Route as AuditLogRouteImport } from './routes/audit-log'
+{% endif %}
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,6 +93,27 @@ const SettingsRoute = SettingsRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 {% endif %}
+{% if 'reports' in values.capabilities %}
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+{% endif %}
+{% if 'history' in values.capabilities %}
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+{% endif %}
+{% if 'audit-log' in values.capabilities %}
+const AuditLogRoute = AuditLogRouteImport.update({
+  id: '/audit-log',
+  path: '/audit-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+{% endif %}
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -105,6 +135,15 @@ export interface FileRoutesByFullPath {
 {% if 'settings' in values.capabilities %}
   '/settings': typeof SettingsRoute
 {% endif %}
+{% if 'reports' in values.capabilities %}
+  '/reports': typeof ReportsRoute
+{% endif %}
+{% if 'history' in values.capabilities %}
+  '/history': typeof HistoryRoute
+{% endif %}
+{% if 'audit-log' in values.capabilities %}
+  '/audit-log': typeof AuditLogRoute
+{% endif %}
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,6 +164,15 @@ export interface FileRoutesByTo {
 {% endif %}
 {% if 'settings' in values.capabilities %}
   '/settings': typeof SettingsRoute
+{% endif %}
+{% if 'reports' in values.capabilities %}
+  '/reports': typeof ReportsRoute
+{% endif %}
+{% if 'history' in values.capabilities %}
+  '/history': typeof HistoryRoute
+{% endif %}
+{% if 'audit-log' in values.capabilities %}
+  '/audit-log': typeof AuditLogRoute
 {% endif %}
 }
 export interface FileRoutesById {
@@ -148,13 +196,22 @@ export interface FileRoutesById {
 {% if 'settings' in values.capabilities %}
   '/settings': typeof SettingsRoute
 {% endif %}
+{% if 'reports' in values.capabilities %}
+  '/reports': typeof ReportsRoute
+{% endif %}
+{% if 'history' in values.capabilities %}
+  '/history': typeof HistoryRoute
+{% endif %}
+{% if 'audit-log' in values.capabilities %}
+  '/audit-log': typeof AuditLogRoute
+{% endif %}
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/components' | '/form' | '/table'{% if 'authentication' in values.capabilities %} | '/authentication'{% endif %}{% if 'profile' in values.capabilities %} | '/profile'{% endif %}{% if 'rbac' in values.capabilities %} | '/rbac'{% endif %}{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}
+  fullPaths: '/' | '/components' | '/form' | '/table'{% if 'authentication' in values.capabilities %} | '/authentication'{% endif %}{% if 'profile' in values.capabilities %} | '/profile'{% endif %}{% if 'rbac' in values.capabilities %} | '/rbac'{% endif %}{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}{% if 'reports' in values.capabilities %} | '/reports'{% endif %}{% if 'history' in values.capabilities %} | '/history'{% endif %}{% if 'audit-log' in values.capabilities %} | '/audit-log'{% endif %}
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/components' | '/form' | '/table'{% if 'authentication' in values.capabilities %} | '/authentication'{% endif %}{% if 'profile' in values.capabilities %} | '/profile'{% endif %}{% if 'rbac' in values.capabilities %} | '/rbac'{% endif %}{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}
-  id: '__root__' | '/' | '/components' | '/form' | '/table'{% if 'authentication' in values.capabilities %} | '/authentication'{% endif %}{% if 'profile' in values.capabilities %} | '/profile'{% endif %}{% if 'rbac' in values.capabilities %} | '/rbac'{% endif %}{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}
+  to: '/' | '/components' | '/form' | '/table'{% if 'authentication' in values.capabilities %} | '/authentication'{% endif %}{% if 'profile' in values.capabilities %} | '/profile'{% endif %}{% if 'rbac' in values.capabilities %} | '/rbac'{% endif %}{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}{% if 'reports' in values.capabilities %} | '/reports'{% endif %}{% if 'history' in values.capabilities %} | '/history'{% endif %}{% if 'audit-log' in values.capabilities %} | '/audit-log'{% endif %}
+  id: '__root__' | '/' | '/components' | '/form' | '/table'{% if 'authentication' in values.capabilities %} | '/authentication'{% endif %}{% if 'profile' in values.capabilities %} | '/profile'{% endif %}{% if 'rbac' in values.capabilities %} | '/rbac'{% endif %}{% if 'dashboard' in values.capabilities %} | '/dashboard'{% endif %}{% if 'settings' in values.capabilities %} | '/settings'{% endif %}{% if 'reports' in values.capabilities %} | '/reports'{% endif %}{% if 'history' in values.capabilities %} | '/history'{% endif %}{% if 'audit-log' in values.capabilities %} | '/audit-log'{% endif %}
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,6 +233,15 @@ export interface RootRouteChildren {
 {% endif %}
 {% if 'settings' in values.capabilities %}
   SettingsRoute: typeof SettingsRoute
+{% endif %}
+{% if 'reports' in values.capabilities %}
+  ReportsRoute: typeof ReportsRoute
+{% endif %}
+{% if 'history' in values.capabilities %}
+  HistoryRoute: typeof HistoryRoute
+{% endif %}
+{% if 'audit-log' in values.capabilities %}
+  AuditLogRoute: typeof AuditLogRoute
 {% endif %}
 }
 
@@ -254,6 +320,33 @@ declare module '@tanstack/react-router' {
       parentRoute: typeof rootRouteImport
     }
 {% endif %}
+{% if 'reports' in values.capabilities %}
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+{% endif %}
+{% if 'history' in values.capabilities %}
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+{% endif %}
+{% if 'audit-log' in values.capabilities %}
+    '/audit-log': {
+      id: '/audit-log'
+      path: '/audit-log'
+      fullPath: '/audit-log'
+      preLoaderRoute: typeof AuditLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+{% endif %}
   }
 }
 
@@ -276,6 +369,15 @@ const rootRouteChildren: RootRouteChildren = {
 {% endif %}
 {% if 'settings' in values.capabilities %}
   SettingsRoute: SettingsRoute,
+{% endif %}
+{% if 'reports' in values.capabilities %}
+  ReportsRoute: ReportsRoute,
+{% endif %}
+{% if 'history' in values.capabilities %}
+  HistoryRoute: HistoryRoute,
+{% endif %}
+{% if 'audit-log' in values.capabilities %}
+  AuditLogRoute: AuditLogRoute,
 {% endif %}
 }
 export const routeTree = rootRouteImport

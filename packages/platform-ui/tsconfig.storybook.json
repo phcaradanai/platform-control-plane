@@ -8,7 +8,16 @@
     "baseUrl": ".",
     "paths": {
       "@platform/ui": ["./src/index.ts"],
-      "@platform/sdk": ["../platform-sdk/src/index.ts"]
+      "@platform/sdk": ["../platform-sdk/src/index.ts"],
+      "@platform/feature-packs/reports": [
+        "../../templates/platform-mfe-app/skeleton/src/feature-packs/reports/index.tsx"
+      ],
+      "@platform/feature-packs/history": [
+        "../../templates/platform-mfe-app/skeleton/src/feature-packs/history/index.tsx"
+      ],
+      "@platform/feature-packs/audit-log": [
+        "../../templates/platform-mfe-app/skeleton/src/feature-packs/audit-log/index.tsx"
+      ]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", ".storybook/**/*.ts"]

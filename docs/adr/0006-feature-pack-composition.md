@@ -38,6 +38,9 @@ also means selection cannot introduce arbitrary per-pack npm dependencies.
 
 - Dashboard and Settings are real generated features, not metadata or empty
   placeholder routes.
+- Reports, History, and Audit Log are real generated operational-data features.
+  Their typed data-source contracts are frontend boundaries only; sample
+  sources are illustrative and replaceable by API adapters.
 - Authentication, Profile, and Permission/RBAC are real frontend-first packs.
   Authentication owns session UX and a provider-neutral sign-in route;
   Profile and Permission/RBAC explicitly depend on Authentication and use the
@@ -51,7 +54,8 @@ also means selection cannot introduce arbitrary per-pack npm dependencies.
 - The committed route tree is templated per selection so generated apps can
   typecheck before their first build; the TanStack Router plugin regenerates it
   from the pruned route files during build.
-- Authentication providers, backend authorization, tenant, and domain data
+- Authentication providers, backend authorization, tenant, audit persistence,
+  reporting, event storage, and domain data
   remain explicit runtime contracts. No fake security behavior is introduced:
   the new packs can render signed-out, unavailable, and denied UX, but API
   authorization remains authoritative.

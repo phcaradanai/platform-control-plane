@@ -57,6 +57,18 @@ const viteFinal: NonNullable<StorybookConfig['viteFinal']> = async viteConfig =>
           replacement: path.join(featurePackSourceDir, 'rbac/index.tsx'),
         },
         {
+          find: '@platform/feature-packs/reports',
+          replacement: path.join(featurePackSourceDir, 'reports/index.tsx'),
+        },
+        {
+          find: '@platform/feature-packs/history',
+          replacement: path.join(featurePackSourceDir, 'history/index.tsx'),
+        },
+        {
+          find: '@platform/feature-packs/audit-log',
+          replacement: path.join(featurePackSourceDir, 'audit-log/index.tsx'),
+        },
+        {
           find: '@platform/sdk',
           replacement: path.join(
             repoRoot,

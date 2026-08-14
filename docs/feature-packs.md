@@ -12,7 +12,7 @@ Every generated pack follows `templates/platform-mfe-app/skeleton/src/feature-pa
 
 ```ts
 interface FeaturePack {
-  readonly id: 'authentication' | 'profile' | 'rbac' | 'dashboard' | 'settings';
+  readonly id: 'authentication' | 'profile' | 'rbac' | 'dashboard' | 'settings' | 'reports' | 'history' | 'audit-log';
   readonly route: `/${string}`;
   readonly navigation: {
     readonly label: string;
@@ -38,7 +38,8 @@ business-domain data model.
 available in the base skeleton. `dependencies.featurePacks` is an explicit
 dependency on another selected pack. The registry validates it at startup and
 the App Factory schema rejects Profile or RBAC selections without
-Authentication. There is no implicit import of an unselected pack.
+Authentication, and Audit Log selections without both Authentication and RBAC.
+There is no implicit import of an unselected pack.
 
 `dependencies.platform` is a declarative, platform-only dependency contract.
 Each entry must be one of the explicitly allowlisted platform packages already
@@ -51,18 +52,23 @@ unselected screen.
 
 ## Implemented packs
 
-| Pack        | Generated behavior                                                                                                           | Boundary                                                             |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `dashboard` | `/dashboard`, shell navigation, neutral summary metrics, range selector, responsive data table, pending refresh state        | local illustrative rows are replaced by a product query/API contract |
-| `settings`  | `/settings`, shell navigation, responsive settings layout, accessible form sections, switches, pending save and saved status | local component state is replaced by a product preference API        |
-| `authentication` | `/authentication`, signed-out/signing-in/authenticated/error/unavailable states, logout, return-path handling, UX-only auth gate | `@platform/sdk` `AuthAdapter`; a provider/backend is still required and API security remains authoritative |
-| `profile` | `/profile`, current-user summary, generic identity details, account action boundary, loading/error/signed-out states | requires `authentication`; identity fields come from `PlatformUser`, domain profile fields stay product-owned |
-| `rbac` | `/rbac`, permission-aware route/action checks, permitted/partial/denied/unavailable states, neutral management boundary | requires `authentication`; uses `PermissionsAdapter` checks, not role-name comparisons |
+| Pack             | Generated behavior                                                                                                                               | Boundary                                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `dashboard`      | `/dashboard`, shell navigation, neutral summary metrics, range selector, responsive data table, pending refresh state                            | local illustrative rows are replaced by a product query/API contract                                                               |
+| `settings`       | `/settings`, shell navigation, responsive settings layout, accessible form sections, switches, pending save and saved status                     | local component state is replaced by a product preference API                                                                      |
+| `authentication` | `/authentication`, signed-out/signing-in/authenticated/error/unavailable states, logout, return-path handling, UX-only auth gate                 | `@platform/sdk` `AuthAdapter`; a provider/backend is still required and API security remains authoritative                         |
+| `profile`        | `/profile`, current-user summary, generic identity details, account action boundary, loading/error/signed-out states                             | requires `authentication`; identity fields come from `PlatformUser`, domain profile fields stay product-owned                      |
+| `rbac`           | `/rbac`, permission-aware route/action checks, permitted/partial/denied/unavailable states, neutral management boundary                          | requires `authentication`; uses `PermissionsAdapter` checks, not role-name comparisons                                             |
+| `reports`        | `/reports`, catalog/search, parameter form, run/loading/empty/error states, bounded result table, permission-aware export boundary               | `ReportsDataSource`; export requires a product-owned endpoint and `reports.export` when permissions are available                  |
+| `history`        | `/history`, chronological activity table, search/filter, actor/source/status, details dialog, loading/empty/error states, cursor pagination      | `HistoryDataSource`; the backend supplies events and remains the source of truth                                                   |
+| `audit-log`      | `/audit-log`, higher-trust audit inspection table, actor/action/resource/outcome fields, filters, detail view, loading/empty/error/denied states | requires `authentication` and `rbac`; `AuditLogDataSource` is an inspection boundary and makes no compliance or immutability claim |
 
 All packs compose `@platform/ui`'s application patterns and primitives. They
 do not recreate shared primitives or application shell foundation. Identity
 packs use `@platform/sdk` for session and permission contracts and keep
-provider-specific behavior outside the pack.
+provider-specific behavior outside the pack. Operational-data packs use
+TanStack Query and the shared data-page/detail patterns; they do not call
+`fetch()` from UI components.
 
 ## Composition and pruning
 
@@ -77,6 +83,24 @@ The package dependency graph stays frozen and shared. Packs use dependencies
 already present in the base skeleton (`@platform/ui`, React, and lucide-react),
 so selecting a pack does not require a per-selection lockfile or a post-
 generation install step.
+
+### Data/API boundaries
+
+Operational data packs export small typed data-source contracts that accept an
+`AbortSignal` and return plain records/pages:
+
+- `ReportsDataSource` lists definitions, runs a parameterized report, and may
+  expose an optional export request.
+- `HistoryDataSource` accepts search/filter/cursor parameters and returns a
+  chronological page.
+- `AuditLogDataSource` accepts search/outcome/cursor parameters and returns
+  audit inspection records.
+
+The generated app provides clearly illustrative local sources so the UX is
+usable immediately. A product replaces those sources with calls through its
+existing `src/api/client.ts` boundary; the screen, state handling, and shared
+patterns stay unchanged. No pack persists events, establishes security, or
+pretends that a local sample is authoritative.
 
 ### Text and optional i18n
 
@@ -107,11 +131,17 @@ form behavior without promoting those demos into a product feature pack.
   Authentication dependency.
 - App D: `['authentication', 'rbac']` — RBAC resolves its explicit
   Authentication dependency.
-- App E: `['authentication', 'profile', 'rbac', 'dashboard', 'settings']` — all
-  representative packs compose through one shell and shared patterns.
+- App E: `['reports']` — Reports works independently with its own data source.
+- App F: `['history']` — History works independently with cursor pagination.
+- App G: `['authentication', 'rbac', 'audit-log']` — Audit Log resolves both
+  identity and permission dependencies.
+- App H: `['authentication', 'profile', 'rbac', 'dashboard', 'settings',
+'reports', 'history', 'audit-log']` — all current packs compose through one
+  shell and shared patterns.
 
-`['profile']` and `['rbac']` without `['authentication']` are invalid App
-Factory selections and are rejected before repository publication.
+`['profile']` and `['rbac']` without `['authentication']`, plus `['audit-log']`
+without both `['authentication', 'rbac']`, are invalid App Factory selections
+and are rejected before repository publication.
 
 The Design System Portal imports the same skeleton pack implementations used
 by generated apps. Its `Feature packs` stories cover each pack independently
