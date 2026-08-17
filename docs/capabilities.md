@@ -1,157 +1,95 @@
-# Capability composition
+# Feature Pack guide
 
-Phase 4 turns a small, representative set of the App Factory's curated
-capability selections into real, generated application code instead of
-metadata-only declarations. This document is the capability contract: what
-"composed" means, which capabilities are composed today, how the mechanism
-works, and how to add another one.
+The App Factory calls its controlled selection list `capabilities`. This guide
+uses **Feature Pack** for a reusable application capability, but keeps the
+implementation status explicit: a selectable identifier is not automatically a
+composed feature.
 
-See [ADR 0004](./adr/0004-capability-composition.md) for the design
-rationale and the alternatives that were ruled out.
+## Status meanings
 
-## Composed vs recorded-only
+- **Composed** — selecting it adds code and wiring to the generated repository;
+  leaving it unselected removes that module.
+- **Recorded only** — selecting it writes the identifier to
+  `platform-app.json`; it does not add pages, providers, APIs, or packages.
+- **Always-on foundation** — the behavior is part of every generated app and
+  is not a useful toggle.
+- **Not an App Factory identifier** — no generated Feature Pack exists under
+  that name in the current template.
 
-`templates/platform-mfe-app/template.yaml`'s `capabilities` field is a
-closed, 13-item enum (see [app-template.md](./app-template.md)). Every
-selection is recorded in the generated `platform-app.json`, unchanged from
-earlier phases. As of Phase 4, three of the thirteen are additionally
-**composed** - they deterministically add real files, wiring, and (gated)
-UI to the generated application:
+## Current selection matrix
 
-| Capability | Status | Composed effect |
-| --- | --- | --- |
-| `notifications` | **Composed** | `src/capabilities/notifications/` - a header bell menu with demo notifications and a "send test notification" button that fires a toast through `@platform/ui`'s existing `ToastProvider`. |
-| `i18n` | **Composed** | `src/capabilities/i18n/` - an `I18nProvider`/`useI18n()` context (2 locales) and a header `LanguageSwitcher`. |
-| `observability` | **Composed** | `src/capabilities/observability/` - `window.onerror`/`unhandledrejection` capture plus a `trackEvent()`/sink API, initialized in `main.tsx`. |
-| `authentication`, `rbac`, `dashboard`, `reports`, `history`, `audit-log`, `tenant`, `theme`, `desktop-ready`, `mobile-ready` | Recorded only | Present in `platform-app.json.capabilities`; no generated code yet. Deferred to a later composition phase - most require infrastructure explicitly out of scope for this phase (a real IdP for `authentication`/`rbac`, a tenant backend for `tenant`, Module Federation/Super App runtime for `desktop-ready`/`mobile-ready`). |
+The closed enum in `templates/platform-mfe-app/template.yaml` currently has 13
+values:
 
-`theme` is not composed as a *toggle* because it isn't optional: every
-generated app already ships `@platform/ui`'s `ThemeProvider` unconditionally
-(light/dark/system, present before this phase). Composing it would mean
-making it removable, which isn't the goal - selecting it is a no-op
-today and it stays in the recorded-only list.
+| Identifier       | Status today             | What a developer gets                                                             |
+| ---------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `notifications`  | **Composed**             | `src/capabilities/notifications/`, header notification UI, and toast integration  |
+| `i18n`           | **Composed**             | `I18nProvider`, `useI18n()`, two locales, and the header language switcher        |
+| `observability`  | **Composed**             | `window.onerror`/`unhandledrejection` capture and `trackEvent()` initialization   |
+| `authentication` | **Recorded only**        | An entry in `platform-app.json`; no login page or identity provider               |
+| `rbac`           | **Recorded only**        | An entry in `platform-app.json`; no authorization provider or enforcement         |
+| `dashboard`      | **Recorded only**        | An entry in `platform-app.json`; no generic dashboard page or data source         |
+| `reports`        | **Recorded only**        | An entry in `platform-app.json`; no report framework or data-source contract      |
+| `history`        | **Recorded only**        | An entry in `platform-app.json`; no history/event data source                     |
+| `audit-log`      | **Recorded only**        | An entry in `platform-app.json`; no audit service or integrity guarantee          |
+| `tenant`         | **Recorded only**        | An entry in `platform-app.json`; no tenant provider                               |
+| `theme`          | **Always-on foundation** | `@platform/ui` theme provider and light/dark/system behavior are already included |
+| `desktop-ready`  | **Recorded only**        | An entry in `platform-app.json`; no desktop shell/runtime                         |
+| `mobile-ready`   | **Recorded only**        | An entry in `platform-app.json`; no mobile shell/runtime                          |
 
-## Why only three, and why these three
+`profile` and `settings` are not current App Factory identifiers. The Backstage
+control plane has its own user-settings plugin, but that is not a generated-app
+Settings or Profile Feature Pack. `PlatformUser` can carry optional display
+name/email data when a real auth adapter is present; that is not a profile
+feature.
 
-The composition mechanism (below) has one hard constraint: **a composed
-capability may add files and wire extension points, but it may not add npm
-dependencies.** The skeleton ships a frozen `package-lock.json` so
-generated CI can run `npm ci` (see
-[app-template.md](./app-template.md#automated-validation)); conditionally
-adding a dependency would require the lockfile to vary per capability
-selection, which a static, committed lockfile cannot do without running
-`npm install` during the scaffolder task (arbitrary code execution during
-scaffolding, deliberately not something this control plane does).
+## Dependency behavior
 
-`notifications`, `i18n`, and `observability` were chosen because a useful
-version of each is implementable with zero new npm packages, reusing
-`@platform/ui` primitives already vendored into the skeleton
-(`DropdownMenu`, `ToastProvider`, `Select`) or plain React context. They are
-also frontend-only and orthogonal to each other and to everything explicitly
-out of scope for this phase (Module Federation/Super App runtime, CodeScape,
-Keycloak, a tenant backend, desktop/mobile shells).
+The actual composition contract has no declared `requires` or `conflictsWith`
+rules today.
 
-## How composition works
+- Every generated app has the base skeleton, `@platform/ui`, and
+  `@platform/sdk`; those are foundation dependencies, not selectable packs.
+- `notifications`, `i18n`, and `observability` are independent. Selecting one
+  does not select either of the others, and none currently adds an npm
+  dependency.
+- Recorded-only selections do not automatically include a provider or another
+  pack. Selecting `rbac` does not wire `authentication`; selecting `reports`
+  does not wire `history` or `audit-log`.
+- No selection changes the generated `package.json`, lockfile, or committed
+  route tree.
 
-1. **Extension points, not scattered conditionals.** Exactly three base
-   files own the wiring, each with a short comment pointing at the owning
-   capability:
-   - `src/app.tsx` - mounts `I18nProvider` (`i18n`).
-   - `src/main.tsx` - calls `initObservability()` (`observability`).
-   - `src/components/layout/header.tsx` - renders `LanguageSwitcher`
-     (`i18n`) and `NotificationsCenter` (`notifications`).
+If a future Feature Pack needs a dependency, implement and validate that
+dependency in the template contract first. Do not encode a dependency only in
+documentation or assume semantic names imply runtime behavior.
 
-   Each capability's implementation lives entirely under its own
-   `src/capabilities/<id>/` directory with its own tests. No composed
-   capability's internals leak into another's.
+## How composition works today
 
-2. **Nunjucks conditionals decide what ships, at generation time.** The
-   scaffolder's `fetch:template` step already renders every skeleton file
-   through nunjucks with `${{ ... }}` expression delimiters (see
-   `packages/template-validation/src/renderSkeleton.ts`). The three
-   extension-point files add plain nunjucks block tags -
-   `{% if 'i18n' in values.capabilities %} ... {% endif %}` - around the
-   import and the JSX/call site for each composed capability. Backstage's
-   `SecureTemplater` only reconfigures nunjucks's *variable* delimiters to
-   `${{ }}`; block tags (`{% %}`) keep their nunjucks defaults, so this
-   works against the real scaffolder backend, not just the hermetic test
-   harness. The result: a generated app's `app.tsx`/`main.tsx`/`header.tsx`
-   contain only the imports and calls for capabilities that were actually
-   selected - no dead conditionals survive into the generated repository.
+The template renders the skeleton, then runs the `pruneCapabilities` built-in
+`fs:delete` step for each of `notifications`, `i18n`, and `observability` that
+was not selected. The skeleton's extension-point files use generation-time
+guards, so the generated app has no dangling imports for omitted modules. The
+same list is read from `template.yaml` by
+`packages/template-validation/src/capabilityComposition.test.ts`.
 
-3. **A dedicated step removes unselected capability directories.**
-   `template.yaml`'s `pruneCapabilities` step runs `fs:delete` (a built-in
-   scaffolder action) between `fetchBase` and `publish`:
+This is deterministic: the same selection produces the same files, and the
+capability modules are independently tested. It is intentionally narrower than
+a runtime plugin system; it does not load remote modules or install arbitrary
+packages during scaffolding.
 
-   ```yaml
-   - id: pruneCapabilities
-     action: fs:delete
-     each: ['notifications', 'i18n', 'observability']
-     if: ${{ not (each.value in parameters.capabilities) }}
-     input:
-       files:
-         - src/capabilities/${{ each.value }}/**
-   ```
+## Choosing a capability
 
-   This is the **single source of truth** for which capability ids are
-   composed - `packages/template-validation`'s tests parse this step out of
-   `template.yaml` rather than hardcoding a second copy of the list, so the
-   two cannot silently drift the way `copyWithoutTemplating`/
-   `copyWithoutRender` did in Phase 1.1 (see app-template.md's "Steps"
-   section for that incident).
+Before selecting an identifier, answer:
 
-   Because step 2 already stripped the imports/call sites for anything not
-   selected, deleting the now-unreferenced directory is safe: nothing in the
-   generated repository imports from a path that no longer exists. This is
-   verified directly (not just assumed) by
-   `packages/template-validation/src/capabilityComposition.test.ts`'s
-   dangling-import check.
+1. Does the matrix say **Composed** or **Always-on**?
+2. If it is **Recorded only**, do you still need the metadata for a future
+   platform integration, or should the behavior remain product-specific?
+3. Is there a real provider/backend for the behavior? If not, do not present a
+   placeholder as production functionality.
+4. Does the desired UX already exist in the
+   [Design System Portal](design-system-portal.md)?
 
-4. **No new top-level routes.** `src/routeTree.gen.ts` is committed
-   (TanStack Router's generated route manifest, needed so `npm run
-   typecheck` works before a build regenerates it - see
-   app-template.md). A composed capability that added or removed a routed
-   page would need a capability-specific `routeTree.gen.ts` per selection
-   combination, which isn't statically representable. All three composed
-   capabilities therefore integrate into always-present routes/layout
-   instead of adding routes of their own.
-
-## Determinism and safety
-
-- **Deterministic**: the same `capabilities` selection always produces the
-  same generated files - no randomness, no network calls, no capability
-  reads another capability's state.
-- **Independently testable**: each capability's module has its own test
-  file, testable in isolation before any scaffolding happens.
-- **Safe to combine**: composed capabilities don't share mutable state or
-  DOM outside their own header slot, and none currently declares a
-  conflict. The mechanism has room to grow - a future capability could
-  declare `requires`/`conflictsWith` against another id, enforced the same
-  way `pruneCapabilities`' `if:` already is - but nothing in the curated set
-  needs it yet, so no unused validation code was added for it.
-- **Invalid input is inert, not just schema-rejected**: `template.yaml`'s
-  `capabilities` field is a closed enum with `uniqueItems: true`, which is
-  the first line of defense at the form/task-submission layer. The
-  composition layer itself doesn't additionally trust that: an unknown id
-  or a duplicate reaching `pruneCapabilities`' `if:` check (`each.value in
-  parameters.capabilities`) simply evaluates to a normal true/false with no
-  special-casing required - an unknown id never matches any `each.value`
-  and has no effect, and a duplicate is idempotent. This is exercised
-  directly in `capabilityComposition.test.ts` rather than only argued in
-  prose.
-
-## Adding another composed capability
-
-1. Confirm it needs no new npm dependency and no new top-level route (see
-   above); if it needs either, it isn't a fit for this mechanism yet.
-2. Add `src/capabilities/<id>/` to the skeleton with its implementation and
-   tests, self-contained.
-3. Add an `{% if '<id>' in values.capabilities %} ... {% endif %}` guard at
-   the relevant extension point(s) (`app.tsx`, `main.tsx`, `header.tsx`, or
-   a new documented extension point if none of those fit).
-4. Add `<id>` to `pruneCapabilities`' `each:` list in `template.yaml`.
-5. Add the capability to the table above.
-6. Run `packages/template-validation`'s suite - `capabilityComposition.test.ts`
-   picks up the new id automatically (it reads the list from
-   `template.yaml`) and will fail if any surviving file still imports the
-   new capability's directory when it's pruned.
+For a domain-specific dashboard, report, history, audit log, settings, or
+profile, build the feature in the generated repository and use the shared UI
+and API conventions. Promote it to the platform only through the
+[Platform Contribution Guide](platform-contribution.md).

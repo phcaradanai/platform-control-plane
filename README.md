@@ -1,101 +1,115 @@
-# Platform Control Plane (Backstage App Factory)
+# Frontend Standard Platform
 
-A Backstage control plane that scaffolds production React applications into
-GitHub repositories via the **Platform MFE Application** software template
-(`fetch:template` → `publish:github` → `catalog:register`).
+This repository is the Backstage control plane and App Factory for the
+frontend standard platform. It gives product teams a repeatable starting point
+for React applications through two shared packages:
 
-- **Frontend:** http://localhost:3000 (guest login → Catalog → Create)
-- **Backend:** http://localhost:7007
-- **Design System Portal:** http://127.0.0.1:6006 (`yarn dev:portal`)
-- **Backend readiness:** `http://localhost:7007/.backstage/health/v1/readiness`
-  (returns `503` until startup completes, then `200`)
+- `@platform/ui` — semantic theme tokens, accessible UI primitives, feedback
+  states, and the Design System Portal.
+- `@platform/sdk` — the stable application identity, runtime, navigation,
+  authentication, permissions, and tenant contracts.
 
-The frontend shows a "Backend unavailable" banner whenever the backend
-readiness endpoint is unreachable, so the UI never looks healthy while the
-catalog/scaffolder APIs are down.
+The control plane is not the product application runtime. It hosts the
+catalog, the App Factory form, and the backend actions that create and register
+generated application repositories. The generated application owns its
+business domain and consumes the shared packages.
 
-## Prerequisites
+## Start here
 
-- Node.js 22
-- Docker (optional — only needed for the PostgreSQL setup)
-- A GitHub account + personal access token (only required when actually
-  running the template's publish step)
+Read the guides in this order if you are new to the platform:
 
-## Install
+1. [Platform overview](docs/platform-overview.md) — what the platform is and
+   what each repository surface owns.
+2. [Architecture](docs/architecture.md) — how the control plane, shared
+   packages, App Factory, generated application, and providers fit together.
+3. [Getting started](docs/getting-started.md) — install and run Backstage,
+   verify the backend, and open the portal.
+4. [App Factory guide](docs/app-template.md) — fill in the current template,
+   understand runtime modes, and know what is generated.
+5. [Feature Pack guide](docs/capabilities.md) — distinguish code that is
+   composed today from selections that are only recorded.
+6. [Business-domain development](docs/business-domain-development.md) — where
+   product implementation begins and which foundations must not be recreated.
+7. [Backend integration boundaries](docs/backend-integration.md) — connect
+   real APIs and providers without treating frontend UX as an authority.
+
+The remaining guides cover the [Design System Portal](docs/design-system-portal.md),
+[platform contributions](docs/platform-contribution.md),
+[troubleshooting](docs/troubleshooting.md), and the
+[current platform status](docs/status.md).
+
+## Quick start
+
+From the repository root, use the vendored Yarn release so the command is
+consistent across shells and operating systems:
 
 ```bash
-node .yarn/releases/yarn-4.13.0.cjs install
+node .yarn/releases/yarn-4.13.0.cjs install --immutable
 ```
 
-## Start (the supported workflow)
-
-Backstage's combined `yarn start` is unreliable on Windows (an IPC timeout
-in the `repo start` orchestrator). The supported workflow is two processes,
-which is also exactly what the Playwright smoke tests start:
+Start the control plane in two terminals. This is the reliable workflow on
+Windows and also works on macOS, Linux, and WSL:
 
 ```bash
-# terminal 1 — backend (port 7007)
+# terminal 1 — Backstage backend, http://localhost:7007
 node .yarn/releases/yarn-4.13.0.cjs dev:backend
 
-# terminal 2 — frontend (port 3000)
+# terminal 2 — Backstage frontend, http://localhost:3000
 node .yarn/releases/yarn-4.13.0.cjs dev:app
 ```
 
-Or via the root scripts: `yarn dev:backend` and `yarn dev:app`.
+Local development uses the guest provider and an in-memory SQLite database by
+default. A GitHub token is not required to boot the platform, but it is
+required to publish a repository from App Factory. See
+[GitHub integration](docs/github-integration.md).
 
-The app boots with guest auth and an in-memory SQLite database; nothing
-else is required to get started. `GITHUB_TOKEN` is only needed for the
-template's publish step.
-
-## Verify it's running
+Open <http://localhost:3000>, choose **Enter**, then use **Catalog** or
+**Create**. To inspect the shared UX standard, run:
 
 ```bash
-# Backend readiness (200 = up; 503 = still starting)
-curl -s http://localhost:7007/.backstage/health/v1/readiness
-
-# Guest token, then catalog entities
-curl -s -X POST http://localhost:7007/api/auth/guest/refresh \
-  -H 'Content-Type: application/json' -d '{}'
-curl -s http://localhost:7007/api/catalog/entities \
-  -H "Authorization: Bearer <backstageIdentity.token>"
+node .yarn/releases/yarn-4.13.0.cjs dev:portal
 ```
 
-Then open http://localhost:3000 → **Enter** (guest) → **Catalog** (should
-list `platform-control-plane` and friends, no 404) → **Create** (should
-show the **Platform MFE Application** template).
+Then open <http://127.0.0.1:6006>.
 
-## Tests
+## Validation
+
+The repository CI contract is:
 
 ```bash
 node .yarn/releases/yarn-4.13.0.cjs lint:all
 node .yarn/releases/yarn-4.13.0.cjs tsc
 node .yarn/releases/yarn-4.13.0.cjs test:all
 node .yarn/releases/yarn-4.13.0.cjs build:all
-
-# Design-system catalog: source-backed Storybook portal.
-node .yarn/releases/yarn-4.13.0.cjs dev:portal
 node .yarn/releases/yarn-4.13.0.cjs build:portal
-
-# End-to-end: guest -> catalog -> create smoke tests in a real browser.
-# Playwright starts the backend + frontend itself (webServer config).
+docker compose config --quiet
 node .yarn/releases/yarn-4.13.0.cjs test:e2e:smoke
 ```
 
-All of the above run in GitHub Actions CI on every push/PR (the e2e job
-starts both processes and runs the Catalog/Create smoke tests).
+The smoke suite starts the Backstage backend and frontend through the
+Playwright configuration and covers guest sign-in, Catalog, and the App
+Factory form. A live publish still needs a GitHub token and a real repository
+destination.
 
-## Documentation
+## Current boundary
 
-- [`docs/getting-started.md`](docs/getting-started.md) — full developer
-  setup (env vars, PostgreSQL, troubleshooting)
-- [`docs/app-template.md`](docs/app-template.md) — what the template
-  generates
-- [`docs/frontend-standards.md`](docs/frontend-standards.md) — the
-  frontend design/UX standard every generated application starts from
-- [`docs/design-system-portal.md`](docs/design-system-portal.md) — the
-  source-backed visual catalog and App Factory feature gate
-- [`docs/catalog-model.md`](docs/catalog-model.md) — catalog entities
-- [`docs/github-integration.md`](docs/github-integration.md) — GitHub token
-  / integration setup
-- [`BACKSTAGE_APP_FACTORY_PHASE_2_REPORT.md`](BACKSTAGE_APP_FACTORY_PHASE_2_REPORT.md)
-  — phase reports and verification evidence
+Stable frontend standards today include `@platform/ui`, `@platform/sdk`, the
+source-backed portal, the Backstage App Factory, the generated React/Vite
+foundation, and generated CI. The current template dynamically composes only
+`notifications`, `i18n`, and `observability`; other capability selections are
+recorded in `platform-app.json` and do not install feature code. The SDK
+contains adapter contracts for optional authentication, permissions, and
+tenant providers, but the generated app has no real provider by default.
+
+Real identity-provider integration for generated applications, tenant
+infrastructure, report/history/audit data services, a host runtime or Module
+Federation, and deployment infrastructure are outside the current supported
+standard. See [Current platform status](docs/status.md) before treating a
+selection or contract as shipped behavior.
+
+## Repository documentation
+
+The complete navigation is in [docs/README](docs/README.md). Reference guides
+for the Backstage catalog, operator identity, GitHub integration, and the SDK
+are linked there. Phase reports and ADRs are historical evidence, not the
+golden path; follow the current guides first.
