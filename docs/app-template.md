@@ -140,15 +140,33 @@ assertions were renamed to match.
 
 ```text
 README.md
-package.json
-tsconfig.json
-src/index.ts
+package.json + package-lock.json
+index.html
+src/
+├── main.tsx + app.tsx + router.tsx + routeTree.gen.ts
+├── routes/                 # root, foundation examples, selected pack routes
+├── feature-packs/          # contract, registry, selected pack modules
+├── capabilities/           # selected notifications/i18n/observability modules
+├── api/                    # typed client, health example, API types
+├── components/             # layout and feedback components
+├── features/               # foundation form/table/health examples
+├── lib/ + platform-ui/ + test/
+e2e/                        # Playwright smoke and composition tests
+vendor/                     # platform-sdk and platform-ui tarballs
+playwright.config.ts
+eslint.config.mjs + tsconfig*.json + vite.config.ts + uno.config.ts
+platform-app.json           # application metadata and selections
 catalog-info.yaml
-platform-app.json
 .env.example
 .gitignore
 .github/workflows/ci.yml
 ```
+
+The `routes/`, `feature-packs/`, and `capabilities/` entries above are
+selection-aware: the skeleton always includes the foundation routes and
+Feature Pack contract/registry, while the App Factory removes unselected
+frontend pack routes/modules and infrastructure capability modules. The
+committed `src/routeTree.gen.ts` reflects the generated route set.
 
 `platform-app.json` records the exact form selections in the shape
 required by the spec:
@@ -170,8 +188,8 @@ Packs are composed into `src/feature-packs/` (see
 [capabilities.md](./capabilities.md) and [feature-packs.md](./feature-packs.md));
 `tenant`, `desktop-ready`, and `mobile-ready` remain recorded only. `theme` is
 an always-on foundation. The generated README explicitly lists what was
-generated, which requested
-capabilities are composed versus recorded only, how to run validation
+generated, which requested identifiers are composed, always-on, or recorded
+only, how to run validation
 (`npm ci && npm run typecheck && npm run build`), and that Module
 Federation integration is a later phase.
 
@@ -179,10 +197,16 @@ The repository contains:
 
 - `package.json` with Vite, React, TypeScript, router/query/table/form tools,
   and the generated validation scripts;
-- `package-lock.json` for deterministic `npm ci` installation;
-- `src/` with routes, layout baseline, API transport, platform adapters,
-  examples, tests, and only the selected infrastructure capability and
-  frontend Feature Pack modules;
+- `src/main.tsx` and `src/app.tsx` for boot, runtime resolution, platform
+  providers, theme foundation, and router mounting;
+- `src/routes/`, `src/routeTree.gen.ts`, and `src/router.tsx` for the current
+  route tree, including selected Feature Pack routes;
+- `src/feature-packs/` and `src/capabilities/` for the selected frontend packs
+  and infrastructure capability modules;
+- `src/api/`, `src/components/`, `src/features/`, `src/lib/`, and `src/test/`
+  for the typed API boundary, layout/feedback components, foundation examples,
+  platform adapters, and unit/component test setup;
+- `e2e/` and `playwright.config.ts` for browser smoke and composition tests;
 - vendored `@platform/ui` and `@platform/sdk` tarballs under `vendor/`;
 - `platform-app.json` containing identity, mode, owner, and exact capability
   selections;

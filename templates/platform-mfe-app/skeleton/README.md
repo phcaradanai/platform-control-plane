@@ -124,6 +124,7 @@ ${{ values.capabilities | dump }}
 
 {% set featurePacks = ['authentication', 'profile', 'rbac', 'dashboard', 'settings', 'reports', 'history', 'audit-log'] %}
 {% set composedCapabilities = ['notifications', 'i18n', 'observability'] %}
+{% set alwaysOnFoundations = ['theme'] %}
 The following **frontend feature packs** are composed — each adds a working
 route, shell navigation entry, standard-pattern screen, interactions, and
 focused tests (see `docs/feature-packs.md` in the platform repository):
@@ -136,13 +137,18 @@ into this application's code, not just recorded (see `docs/capabilities.md` in t
 
 {% for capability in values.capabilities %}{% if capability in composedCapabilities %}- **${{ capability }}** — see `src/capabilities/${{ capability }}/`
 {% endif %}{% endfor %}
-Any selected value outside the composed platform capabilities and frontend
-Feature Packs is **recorded only** in
+The following **always-on foundation** is included in every generated
+application, whether or not it appears in the requested capabilities:
+
+{% for foundation in alwaysOnFoundations %}- **${{ foundation }}** — provided by the vendored `@platform/ui` theme foundation in every generated app; it is not an optional selection.
+{% endfor %}
+Any selected value outside the composed platform capabilities, frontend
+Feature Packs, and always-on foundations is **recorded only** in
 `platform-app.json`; it does not install a page, provider, data source, or
 backend. The exact status of every current identifier is maintained by the
 Platform Control Plane documentation.
 
-{% for capability in values.capabilities %}{% if not (capability in composedCapabilities) and not (capability in featurePacks) %}- ${{ capability }}
+{% for capability in values.capabilities %}{% if not (capability in composedCapabilities) and not (capability in featurePacks) and not (capability in alwaysOnFoundations) %}- ${{ capability }}
 {% endif %}{% endfor %}
 
 ## Where product development begins
