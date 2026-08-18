@@ -1,5 +1,10 @@
 # Backstage App Factory - Phase 2 Report
 
+> **Historical phase report — see current documentation.** This report
+> preserves Phase 2 decisions and evidence; it is not the current capability
+> contract. Read [Current platform status](docs/status.md), [Feature Pack guide](docs/capabilities.md),
+> and [Frontend feature packs](docs/feature-packs.md).
+
 ## Scope
 
 Upgraded the `platform-mfe-app` scaffolder skeleton from the Phase 1

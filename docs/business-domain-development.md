@@ -51,12 +51,18 @@ Do not make a second local implementation of:
 - an additional shell or navigation overlay when the generated shell can be
   extended.
 
-The current repository does not ship generic report, history, audit-log,
-profile, dashboard, or settings Feature Pack implementations. Do not create a
-parallel platform-shaped framework for those concerns inside a product. For a
-real product need, implement the domain-specific page and API in the generated
-application; if several products need the same neutral contract, propose it to
-the platform team instead of silently copying a framework.
+The current repository ships neutral frontend Feature Packs for
+Authentication, Profile, Permission/RBAC, Dashboard, Settings, Reports,
+History, and Audit Log when they are selected. They provide routes, screens,
+interactions, tests, and replaceable frontend/data boundaries; they do not
+provide production providers, persistence, authorization enforcement, or
+compliance. Use a selected pack as the frontend starting point and replace its
+illustrative data source through the product API boundary. Do not create a
+parallel platform-shaped framework for those concerns inside a product. If a
+product needs different domain semantics or did not select a pack, implement
+the domain-specific page and API in the generated application; if several
+products need the same neutral contract, propose it to the platform team
+instead of silently copying a framework.
 
 The generated `src/components/layout` code is application-owned baseline
 layout, because the current platform intentionally does not prescribe one
@@ -67,14 +73,14 @@ it to the platform team instead of copying it again.
 
 ## Ownership checklist
 
-| Concern                 | Product owns                                                   | Platform owns                                           |
-| ----------------------- | -------------------------------------------------------------- | ------------------------------------------------------- |
-| Business logic          | Domain rules, calculations, workflows                          | No product rules                                        |
-| APIs                    | Domain endpoints, DTOs, query keys, backend integration        | Generic request/error transport                         |
-| Pages                   | Domain routes and information architecture                     | Shared primitives and patterns                          |
-| UX                      | Domain content, states, approvals, exports, and task flow      | Interaction/accessibility behavior of shared components |
-| Auth and permissions    | Requesting the required provider contracts and handling states | SDK shape and safe unavailable/fail-closed defaults     |
-| Audit/history/reporting | Product semantics and real service integration                 | No current generic data-source contract                 |
+| Concern                 | Product owns                                                   | Platform owns                                                                                       |
+| ----------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Business logic          | Domain rules, calculations, workflows                          | No product rules                                                                                    |
+| APIs                    | Domain endpoints, DTOs, query keys, backend integration        | Generic request/error transport                                                                     |
+| Pages                   | Domain routes and information architecture                     | Shared primitives and patterns                                                                      |
+| UX                      | Domain content, states, approvals, exports, and task flow      | Interaction/accessibility behavior of shared components                                             |
+| Auth and permissions    | Requesting the required provider contracts and handling states | SDK shape and safe unavailable/fail-closed defaults                                                 |
+| Audit/history/reporting | Product semantics and real service integration                 | Neutral Feature Pack UX/data boundaries; no backend authority, persistence, or compliance guarantee |
 
 ## Extending the generated application safely
 

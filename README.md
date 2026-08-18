@@ -26,8 +26,9 @@ Read the guides in this order if you are new to the platform:
    verify the backend, and open the portal.
 4. [App Factory guide](docs/app-template.md) — fill in the current template,
    understand runtime modes, and know what is generated.
-5. [Feature Pack guide](docs/capabilities.md) — distinguish code that is
-   composed today from selections that are only recorded.
+5. [Feature Pack guide](docs/capabilities.md) — distinguish infrastructure
+   composition, frontend Feature Packs, the always-on foundation, and
+   recorded-only selections.
 6. [Business-domain development](docs/business-domain-development.md) — where
    product implementation begins and which foundations must not be recreated.
 7. [Backend integration boundaries](docs/backend-integration.md) — connect
@@ -95,17 +96,26 @@ destination.
 
 Stable frontend standards today include `@platform/ui`, `@platform/sdk`, the
 source-backed portal, the Backstage App Factory, the generated React/Vite
-foundation, and generated CI. The current template dynamically composes only
-`notifications`, `i18n`, and `observability`; other capability selections are
-recorded in `platform-app.json` and do not install feature code. The SDK
-contains adapter contracts for optional authentication, permissions, and
-tenant providers, but the generated app has no real provider by default.
+foundation, and generated CI. The current template composes two kinds of
+generated capability:
+
+- Infrastructure capabilities: `notifications`, `i18n`, and `observability`.
+- Frontend Feature Packs: Authentication, Profile, Permission/RBAC, Dashboard,
+  Settings, Reports, History, and Audit Log. Each selected pack contributes a
+  route, navigation entry, screen, interactions, focused tests, and a typed
+  frontend/data boundary.
+
+`theme` is an always-on foundation. `tenant`, `desktop-ready`, and
+`mobile-ready` are recorded-only identifiers. Every selection is recorded in
+`platform-app.json`, but a frontend Feature Pack is not a production identity
+provider, authorization service, tenant service, persistence layer, audit
+authority, or business backend.
 
 Real identity-provider integration for generated applications, tenant
-infrastructure, report/history/audit data services, a host runtime or Module
-Federation, and deployment infrastructure are outside the current supported
-standard. See [Current platform status](docs/status.md) before treating a
-selection or contract as shipped behavior.
+infrastructure, report/history/audit data services and persistence, a host
+runtime or Module Federation, and deployment infrastructure remain outside the
+current supported standard. See [Current platform status](docs/status.md)
+before treating a selection or contract as shipped production authority.
 
 ## Repository documentation
 

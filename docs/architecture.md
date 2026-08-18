@@ -81,6 +81,12 @@ The host contract and runtime resolver exist, but this repository does not
 ship a Super App or Module Federation host. `platform-app.json` records
 `runtime.status: "not-configured"` for that reason.
 
-At generation time, the template conditionally wires only the three current
-composed capability modules. The mechanism is deterministic and does not
-change `package.json` or `package-lock.json` per selection.
+At generation time, the template conditionally wires the three independent
+infrastructure capability modules (`notifications`, `i18n`, and
+`observability`) and the eight frontend Feature Packs. Infrastructure
+capabilities mount into their documented extension points; a selected Feature
+Pack adds its route, navigation, screen, interactions, tests, and frontend/data
+boundary. Profile and RBAC require Authentication, while Audit Log requires
+Authentication and RBAC; the App Factory schema and generated registry
+validate those selections. The render-and-prune mechanism is deterministic and
+does not change `package.json` or `package-lock.json` per selection.

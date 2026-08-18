@@ -31,22 +31,23 @@ The template uses only Backstage built-in actions:
 fetch:template -> fs:delete -> publish:github -> catalog:register
 ```
 
-`fs:delete` removes unselected composed capability directories after the
-skeleton is rendered. It does not add product behavior or install packages.
+The `fs:delete` steps remove unselected composed infrastructure-capability
+and frontend Feature Pack directories after the skeleton is rendered. They do
+not add product behavior or install packages.
 
 ## Form fields
 
-| Section              | Field            | Current behavior                                                                                                                    |
-| -------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Section              | Field            | Current behavior                                                                                                                  |
+| -------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | Application identity | `name`           | Required URL-safe slug, also used as repository/catalog component name; lowercase letters, digits, and hyphens; max 63 characters |
-| Application identity | `title`          | Required human-readable display title                                                                                               |
-| Application identity | `description`    | Optional product description; rendered into the repository metadata and README                                                      |
-| Application identity | `owner`          | Required Backstage `OwnerPicker`, filtered to Groups                                                                          |
-| Repository           | `repoUrl`        | Required `RepoUrlPicker`; `github.com` is the only allowed host                                                         |
-| Repository           | `repoVisibility` | Required `private` or `public`; default is `private`                                                                |
-| Application metadata | `lifecycle`      | Required `experimental` or `production`; default is `experimental`                                                  |
-| Application metadata | `mode`           | Required `platform-mfe`, `standalone`, or `standalone-and-mfe`; default is `platform-mfe`                   |
-| Capabilities         | `capabilities`   | Optional unique multi-select from the closed 15-item list in the Feature Pack guide                                                |
+| Application identity | `title`          | Required human-readable display title                                                                                             |
+| Application identity | `description`    | Optional product description; rendered into the repository metadata and README                                                    |
+| Application identity | `owner`          | Required Backstage `OwnerPicker`, filtered to Groups                                                                              |
+| Repository           | `repoUrl`        | Required `RepoUrlPicker`; `github.com` is the only allowed host                                                                   |
+| Repository           | `repoVisibility` | Required `private` or `public`; default is `private`                                                                              |
+| Application metadata | `lifecycle`      | Required `experimental` or `production`; default is `experimental`                                                                |
+| Application metadata | `mode`           | Required `platform-mfe`, `standalone`, or `standalone-and-mfe`; default is `platform-mfe`                                         |
+| Capabilities         | `capabilities`   | Optional unique multi-select from the closed 15-item list in the Feature Pack guide                                               |
 
 The `capabilities` field is restricted to the curated identifiers documented
 in [capabilities.md](capabilities.md). Every selection is recorded in
@@ -62,8 +63,9 @@ listed in the form-field table above. It has no free-text package or install
 field. The eight frontend Feature Packs are composed into generated routes,
 navigation, screens, interactions, and tests; the platform capabilities
 `notifications`, `i18n`, and `observability` are composed into their
-extension points. The other four selections are recorded only in
-`platform-app.json`. See [capabilities.md](./capabilities.md) and
+extension points. `tenant`, `desktop-ready`, and `mobile-ready` are recorded
+only in `platform-app.json`; `theme` is an always-on foundation rather than a
+meaningful toggle. See [capabilities.md](./capabilities.md) and
 [feature-packs.md](./feature-packs.md).
 
 ## Runtime mode
@@ -161,13 +163,14 @@ Module Federation is installed.
 ## Generated output
 
 `runtime.status` is always `not-configured` - no Module Federation runtime
-is installed or wired up by this phase. As of Phase 4, `notifications`,
-`i18n`, and `observability` are composed into `src/capabilities/` when
-selected, while all current frontend packs are composed into
-`src/feature-packs/` (see [capabilities.md](./capabilities.md) and
-[feature-packs.md](./feature-packs.md)); `tenant`, `theme`,
-`desktop-ready`, and `mobile-ready` remain recorded only. The
-generated README explicitly lists what was generated, which requested
+is installed or wired up by this phase. The independent infrastructure
+capabilities `notifications`, `i18n`, and `observability` are composed into
+`src/capabilities/` when selected, while the eight current frontend Feature
+Packs are composed into `src/feature-packs/` (see
+[capabilities.md](./capabilities.md) and [feature-packs.md](./feature-packs.md));
+`tenant`, `desktop-ready`, and `mobile-ready` remain recorded only. `theme` is
+an always-on foundation. The generated README explicitly lists what was
+generated, which requested
 capabilities are composed versus recorded only, how to run validation
 (`npm ci && npm run typecheck && npm run build`), and that Module
 Federation integration is a later phase.
@@ -178,7 +181,8 @@ The repository contains:
   and the generated validation scripts;
 - `package-lock.json` for deterministic `npm ci` installation;
 - `src/` with routes, layout baseline, API transport, platform adapters,
-  examples, tests, and only the selected composed capability modules;
+  examples, tests, and only the selected infrastructure capability and
+  frontend Feature Pack modules;
 - vendored `@platform/ui` and `@platform/sdk` tarballs under `vendor/`;
 - `platform-app.json` containing identity, mode, owner, and exact capability
   selections;

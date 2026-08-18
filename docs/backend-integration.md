@@ -45,9 +45,11 @@ timeouts, cancellation, and a normalized `ApiError`. Add domain endpoints in
 authentication, authorization, persistence, and error semantics on the backend
 side.
 
-There is no generated backend and no current generic report/history/audit data
-source interface. Until the platform publishes one, those are product-owned
-API boundaries:
+There is no generated backend. The Reports, History, and Audit Log Feature
+Packs do provide typed frontend data-source interfaces, but those interfaces
+are replaceable boundaries rather than backend services or authority. Until a
+product connects them to real services, the API boundaries remain
+product-owned:
 
 ```text
 Product report page  -> src/api/reports.ts       -> product report backend
@@ -61,28 +63,39 @@ reusable.
 
 ## Feature Pack/provider map
 
-The App Factory identifiers are not all implemented data integrations. This is
-the safe interpretation of the current repository:
+The eight frontend Feature Packs are shipped generated UX and typed frontend
+boundaries. They do not themselves provide the production provider, backend,
+persistence, security authority, or compliance guarantee behind those
+boundaries:
 
-- **Authentication** → SDK auth adapter → real identity provider. The
-  `authentication` selection is recorded only; it does not install a login
-  page or provider.
-- **Profile** → no current generated-app Profile Pack or profile adapter. An
-  authenticated `PlatformUser` may expose display name/email, but a profile
-  page and profile persistence are not provided.
-- **Permission/RBAC** → SDK permissions adapter → backend/host authorization.
-  The UI can hide or disable affordances, but the backend must enforce every
-  permission.
-- **Dashboard** → product dashboard API → product service. No generic
-  dashboard data contract is currently shipped.
-- **Settings** → product settings API or the control plane's separate Backstage
-  user-settings plugin. No generated-app Settings Pack is shipped.
-- **Reports** → product report data source → product backend. No generic report
-  data-source contract is currently shipped.
-- **History** → product history/event data source → event or application
-  backend. No generic history contract is currently shipped.
-- **Audit Log** → real audit data source → audit service. The frontend is not
-  the authority for append-only integrity, retention, or compliance.
+- **Authentication** → `/authentication` session UX and SDK auth adapter → a
+  real identity provider. Standalone remains `unavailable`; no generated-app
+  provider is configured by default.
+- **Profile** → `/profile` current-user UX → `PlatformUser` plus any
+  product-owned profile API. It requires Authentication; profile persistence
+  remains external.
+- **Permission/RBAC** → `/rbac` permission-aware UX and SDK permissions
+  adapter → backend/host authorization. The backend must enforce every
+  permission and resource boundary.
+- **Dashboard** → `/dashboard` summary/table/refresh UX → a product dashboard
+  API. The pack does not provide platform-owned business data.
+- **Settings** → `/settings` settings form and save UX → a product preference
+  API or the control plane's separate Backstage user-settings plugin. The pack
+  does not provide persistence.
+- **Reports** → `/reports` catalog/search/run/result/export UX and
+  `ReportsDataSource` → a product report service. The frontend boundary is
+  shipped; reporting authority and export authorization remain external.
+- **History** → `/history` activity/filter/detail/pagination UX and
+  `HistoryDataSource` → a product event or application backend. The backend
+  remains the source of truth.
+- **Audit Log** → `/audit-log` audit inspection UX and `AuditLogDataSource` →
+  a real audit service. It requires Authentication and RBAC, but provides no
+  audit persistence, append-only integrity, retention, or compliance guarantee.
+
+The App Factory rejects Profile or RBAC without Authentication and Audit Log
+without both Authentication and RBAC before repository publication. The
+generated registry also validates declared pack dependencies; no pack silently
+imports an unselected pack.
 
 The exact selection/composition status is maintained in the
 [Feature Pack guide](capabilities.md).

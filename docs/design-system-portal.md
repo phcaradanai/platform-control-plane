@@ -75,9 +75,10 @@ generated repository. See [Frontend standards](frontend-standards.md) and the
 
 ## Current boundary
 
-The portal documents and exercises the shared UI foundation. It does not prove
-that a future Authentication, Profile, Permission/RBAC, Dashboard, Settings,
-Reports, History, or Audit Log backend exists. Those feature/data contracts
-must be implemented and connected separately; the
+The portal documents and exercises the shared UI foundation and the shipped
+frontend Feature Pack implementations. It does not prove that a production
+identity provider, authorization service, profile/dashboard/settings/report/
+history backend, audit persistence, or compliance system exists. Those real
+providers and services must be connected separately; the
 [Feature Pack guide](capabilities.md) is the source of truth for current
-selection behavior.
+selection behavior and frontend contracts.

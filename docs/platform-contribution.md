@@ -65,21 +65,25 @@ not change an already generated application.
 
 Only add a Feature Pack when its important UX states are reviewable in the
 portal and its composition contract is explicit. The current implementation
-requires a composed module to:
+requires a composed pack to:
 
-- be self-contained under `src/capabilities/<id>/`;
+- be self-contained under `src/feature-packs/<id>/`;
 - use existing dependencies and the frozen generated lockfile;
-- use a documented extension point rather than adding an untracked route-tree
-  combination;
-- be conditionally wired in the skeleton and pruned when unselected;
+- own an explicit route, navigation contribution, screen, and frontend
+  contract in the generated app;
+- be conditionally wired in the feature-pack registry and route tree, then
+  pruned when unselected;
 - have independent tests and no dangling imports when omitted;
-- be added to the App Factory enum, composition list, guide, and validation.
+- be added to the App Factory enum, pack registry, guide, and validation.
 
-The current composition list is read from `template.yaml` by
-`packages/template-validation`; keep that list as the single source of truth.
-No current Feature Pack declares a dependency or conflict. If a new pack needs
-one, extend the schema and validation contract deliberately before documenting
-the dependency.
+The infrastructure composition list is read from `template.yaml` by
+`packages/template-validation`; `pruneFeaturePacks` is the corresponding
+source list for frontend packs. Keep the template lists, generated registry,
+and contract aligned. Current Feature Pack dependencies are explicit and
+validated: Profile and RBAC require Authentication, and Audit Log requires
+Authentication and RBAC. No current pack declares a conflict. If a new pack
+needs another dependency or conflict rule, extend the schema and validation
+contract deliberately before documenting it; do not add a generic solver.
 
 ## Verification expectations
 

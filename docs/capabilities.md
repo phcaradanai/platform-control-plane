@@ -2,13 +2,16 @@
 
 The App Factory calls its controlled selection list `capabilities`. This
 guide uses **Feature Pack** for a reusable application capability while
-keeping implementation status explicit: a selectable identifier is not
-automatically composed. Phase 4 established the deterministic infrastructure
-composition path, and Phase 5.5B2 extends it with frontend Feature Packs; see
+keeping implementation status explicit: the three infrastructure identifiers
+compose independent extension-point modules when selected, while the eight
+frontend Feature Pack identifiers compose real generated application code.
+Phase 4 established the deterministic infrastructure composition path, and
+Phase 5.5B2 extends it with frontend Feature Packs; see
 [feature-packs.md](./feature-packs.md) for the route and screen contract.
-This document remains the infrastructure capability contract: what
-"composed" means, which platform integrations are composed today, how the
-mechanism works, and how to add another one.
+This document is the selection matrix and infrastructure capability contract:
+what "composed" means, which platform integrations are composed today, how
+the mechanism works, and how to add another one. Frontend pack contracts and
+dependencies are maintained in [feature-packs.md](./feature-packs.md).
 
 ## Status meanings
 
@@ -28,23 +31,23 @@ values. Every selection is recorded in `platform-app.json`; composed
 platform capabilities and frontend Feature Packs also add the generated code
 described in the final column.
 
-| Identifier       | Status today                  | What a developer gets |
-| ---------------- | ----------------------------- | --------------------- |
-| `notifications`  | **Composed**                  | `src/capabilities/notifications/`, header notification UI, and toast integration |
-| `i18n`           | **Composed**                  | `I18nProvider`, `useI18n()`, two locales, and the header language switcher |
-| `observability`  | **Composed**                  | Error/rejection capture and `trackEvent()` initialization |
-| `authentication` | **Composed Feature Pack**     | `/authentication` route, session UX, sign-in states, and tests |
-| `profile`        | **Composed Feature Pack**     | `/profile` route and current-user UX; requires Authentication |
-| `rbac`           | **Composed Feature Pack**     | `/rbac` route and permission-aware UX; requires Authentication |
-| `dashboard`      | **Composed Feature Pack**     | `/dashboard` route, summary, table, refresh interaction, and tests |
-| `settings`       | **Composed Feature Pack**     | `/settings` route, responsive settings form, save interaction, and tests |
-| `reports`        | **Composed Feature Pack**     | `/reports` route with typed, replaceable report-data boundary |
-| `history`        | **Composed Feature Pack**     | `/history` route with typed, replaceable activity-data boundary |
-| `audit-log`      | **Composed Feature Pack**     | `/audit-log` route with typed audit inspection boundary; requires Authentication and RBAC |
-| `tenant`         | **Recorded only**             | An entry in `platform-app.json`; no tenant provider |
-| `theme`          | **Always-on foundation**      | `@platform/ui` theme provider and light/dark/system behavior already included |
-| `desktop-ready`  | **Recorded only**             | An entry in `platform-app.json`; no desktop shell or runtime |
-| `mobile-ready`   | **Recorded only**             | An entry in `platform-app.json`; no mobile shell or runtime |
+| Identifier       | Status today              | What a developer gets                                                                     |
+| ---------------- | ------------------------- | ----------------------------------------------------------------------------------------- |
+| `notifications`  | **Composed**              | `src/capabilities/notifications/`, header notification UI, and toast integration          |
+| `i18n`           | **Composed**              | `I18nProvider`, `useI18n()`, two locales, and the header language switcher                |
+| `observability`  | **Composed**              | Error/rejection capture and `trackEvent()` initialization                                 |
+| `authentication` | **Composed Feature Pack** | `/authentication` route, session UX, sign-in states, and tests                            |
+| `profile`        | **Composed Feature Pack** | `/profile` route and current-user UX; requires Authentication                             |
+| `rbac`           | **Composed Feature Pack** | `/rbac` route and permission-aware UX; requires Authentication                            |
+| `dashboard`      | **Composed Feature Pack** | `/dashboard` route, summary, table, refresh interaction, and tests                        |
+| `settings`       | **Composed Feature Pack** | `/settings` route, responsive settings form, save interaction, and tests                  |
+| `reports`        | **Composed Feature Pack** | `/reports` route with typed, replaceable report-data boundary                             |
+| `history`        | **Composed Feature Pack** | `/history` route with typed, replaceable activity-data boundary                           |
+| `audit-log`      | **Composed Feature Pack** | `/audit-log` route with typed audit inspection boundary; requires Authentication and RBAC |
+| `tenant`         | **Recorded only**         | An entry in `platform-app.json`; no tenant provider                                       |
+| `theme`          | **Always-on foundation**  | `@platform/ui` theme provider and light/dark/system behavior already included             |
+| `desktop-ready`  | **Recorded only**         | An entry in `platform-app.json`; no desktop shell or runtime                              |
+| `mobile-ready`   | **Recorded only**         | An entry in `platform-app.json`; no mobile shell or runtime                               |
 
 Feature Pack contracts, data boundaries, and dependency validation are
 documented in [feature-packs.md](./feature-packs.md). `theme` is not
@@ -59,8 +62,10 @@ explicit platform or product contracts rather than placeholders.
 
 ## Dependency behavior
 
-The actual composition contract has no declared `requires` or `conflictsWith`
-rules today.
+The infrastructure capability mechanism has no declared `requires` or
+`conflictsWith` rules today. This statement applies only to the independent
+`notifications`, `i18n`, and `observability` extension-point capabilities; it
+does not apply to frontend Feature Packs.
 
 - Every generated app has the base skeleton, `@platform/ui`, and
   `@platform/sdk`; those are foundation dependencies, not selectable packs.
@@ -68,8 +73,10 @@ rules today.
   does not select either of the others, and none currently adds an npm
   dependency.
 - Recorded-only selections do not automatically include a provider or another
-  pack. Selecting `rbac` does not wire `authentication`; selecting `reports`
-  does not wire `history` or `audit-log`.
+  pack. Frontend Feature Pack dependencies are validated explicitly: Profile
+  and RBAC require Authentication, and Audit Log requires Authentication and
+  RBAC; no dependency silently imports an unselected pack. Selecting Reports
+  does not wire History or Audit Log.
 - Selection never changes the generated `package.json` or lockfile. Feature
   Pack selections intentionally change the templated route tree and generated
   source; infrastructure capability selections only add or remove their
@@ -143,12 +150,12 @@ mount into documented extension points.
   reads another capability's state.
 - **Independently testable**: each capability's module has its own test
   file, testable in isolation before any scaffolding happens.
-- **Safe to combine**: composed capabilities don't share mutable state or
-  DOM outside their own header slot, and none currently declares a
-  conflict. The mechanism has room to grow - a future capability could
-  declare `requires`/`conflictsWith` against another id, enforced the same
-  way `pruneCapabilities`' `if:` already is - but nothing in the curated set
-  needs it yet, so no unused validation code was added for it.
+- **Safe to combine**: the three infrastructure capabilities don't share
+  mutable state or DOM outside their own header slot, and none declares a
+  conflict. Frontend Feature Pack dependencies are a separate, explicit
+  validated contract. The infrastructure mechanism has room to grow if a
+  real infrastructure conflict appears; do not infer a generic dependency
+  solver from it.
 - **Invalid input is inert, not just schema-rejected**: `template.yaml`'s
   `capabilities` field is a closed enum with `uniqueItems: true`, which is
   the first line of defense at the form/task-submission layer. The
@@ -162,8 +169,10 @@ parameters.capabilities`) simply evaluates to a normal true/false with no
 
 ## Adding another composed capability
 
-1. Confirm it needs no new npm dependency and no new top-level route (see
-   above); if it needs either, it isn't a fit for this mechanism yet.
+1. Confirm it is an infrastructure capability that needs no new npm
+   dependency and no new top-level route (see above); if it needs either, it
+   is not a fit for this mechanism yet. Frontend Feature Packs use the
+   separate contract in [feature-packs.md](./feature-packs.md).
 2. Add `src/capabilities/<id>/` to the skeleton with its implementation and
    tests, self-contained.
 3. Add an `{% if '<id>' in values.capabilities %} ... {% endif %}` guard at

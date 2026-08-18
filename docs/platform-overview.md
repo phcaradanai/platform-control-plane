@@ -47,8 +47,12 @@ to Backstage authenticates an end user of a generated application.
 
 ## What not to infer
 
-The App Factory capability list is a controlled selection vocabulary, not a
-promise that every identifier installs a complete feature. Today only
-`notifications`, `i18n`, and `observability` add generated code. The selected
-values for other identifiers are retained in `platform-app.json` for future
-composition or integration work. See [Current platform status](status.md).
+The App Factory capability list is a controlled vocabulary with three
+categories. The infrastructure capabilities `notifications`, `i18n`, and
+`observability`, plus the eight frontend Feature Packs — Authentication,
+Profile, Permission/RBAC, Dashboard, Settings, Reports, History, and Audit Log
+— add generated code when selected. `theme` is always-on; `tenant`,
+`desktop-ready`, and `mobile-ready` are recorded only. A generated Feature
+Pack is frontend UX and a typed boundary, not a real provider, backend,
+persistence layer, or compliance authority. See [Current platform status](status.md)
+and the [Feature Pack guide](capabilities.md).

@@ -35,7 +35,9 @@ root [README](../README.md) for the shortest path to a running control plane.
 
 ## Historical records
 
-The repository also contains ADRs and phase reports. They preserve decisions
-and verification evidence, but they are not current setup instructions. When a
-historical record disagrees with a guide above, the implementation on `main`
-and the current guide are authoritative.
+The repository also contains ADRs and phase reports. They are historical
+records that preserve decisions and verification evidence, not current setup
+instructions. For present capability behavior, read [Current platform status](status.md),
+[Feature Pack guide](capabilities.md), and [Frontend feature packs](feature-packs.md).
+When a historical record disagrees with a guide above, the implementation on
+`main` and the current guide are authoritative.

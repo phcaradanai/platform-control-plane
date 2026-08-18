@@ -19,12 +19,13 @@ Unavailable auth actions reject with `PlatformCapabilityUnavailableError`.
 The SDK does not invent a fake user, grant, or tenant.
 
 Identity, runtime information, and navigation are core infrastructure with no
-external dependency, so they always work standalone. Auth, permissions, and
-tenant are real platform capabilities that this phase deliberately does not
-implement; the SDK defines their contracts and behaves predictably when no
-provider is wired up. The Authentication, Profile, and Permission/RBAC Feature
-Packs consume these contracts without providing an identity provider or
-security authority.
+external dependency, so they always work standalone. The SDK defines auth,
+permissions, and tenant adapter contracts but does not implement their real
+providers; it behaves predictably when no provider is wired up. The
+Authentication, Profile, and Permission/RBAC Feature Packs consume these
+contracts without providing an identity provider or security authority. The
+other Feature Packs likewise keep their production data and service authority
+outside the SDK.
 
 ## Provider usage
 
@@ -104,17 +105,17 @@ redirect.
 `usePlatformRuntime().runtimeMode` (`'standalone'` or `'hosted'`) is a
 distinct concept from `platform-app.json`'s own `mode` field (the
 scaffold-time choice of `platform-mfe` / `standalone` /
-`standalone-and-mfe`): `runtimeMode` is *where the code is currently
-executing*, `mode` is *what the app was configured for*. Phase 5 connects
+`standalone-and-mfe`): `runtimeMode` is _where the code is currently
+executing_, `mode` is _what the app was configured for_. Phase 5 connects
 the two with `resolvePlatformRuntime(mode, host)`
 (`packages/platform-sdk/src/runtime/resolve.ts`), called once at boot by
 the generated app's `main.tsx`:
 
-| `mode` | No platform host detected | Platform host detected |
-| --- | --- | --- |
-| `standalone` | `runtimeMode: 'standalone'` | `runtimeMode: 'standalone'` (host ignored) |
-| `platform-mfe` | throws `PlatformRuntimeUnavailableError` | `runtimeMode: 'hosted'`, uses host adapters |
-| `standalone-and-mfe` | `runtimeMode: 'standalone'` | `runtimeMode: 'hosted'`, uses host adapters |
+| `mode`               | No platform host detected                | Platform host detected                      |
+| -------------------- | ---------------------------------------- | ------------------------------------------- |
+| `standalone`         | `runtimeMode: 'standalone'`              | `runtimeMode: 'standalone'` (host ignored)  |
+| `platform-mfe`       | throws `PlatformRuntimeUnavailableError` | `runtimeMode: 'hosted'`, uses host adapters |
+| `standalone-and-mfe` | `runtimeMode: 'standalone'`              | `runtimeMode: 'hosted'`, uses host adapters |
 
 `standalone` never uses a host even if one is present - otherwise it
 would be behaviorally identical to `standalone-and-mfe`. `platform-mfe`
@@ -144,7 +145,7 @@ interface PlatformHostContext {
 `detectPlatformHost()` reads and validates it, returning `null` for both
 "nothing there" and "present but an unrecognized `contractVersion`" -
 callers can't tell the two apart, and don't need to. This global is
-deliberately the *entire* boundary: nothing in the SDK or the generated
+deliberately the _entire_ boundary: nothing in the SDK or the generated
 app assumes Backstage, webpack, or Module Federation put it there, so a
 later Super App runtime, a plain `<script>` tag, or an iframe bridge can
 all satisfy it identically.

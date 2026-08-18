@@ -1,8 +1,17 @@
 # ADR 0002: `@platform/sdk` as the stable platform-facing contract
 
+> **Historical record — see current documentation.** This ADR captures the
+> decision and implementation boundary of its phase. For present behavior,
+> read [Current platform status](../status.md), [Feature Pack guide](../capabilities.md),
+> and [Frontend feature packs](../feature-packs.md).
+
 ## Status
 
 Accepted (Phase 3)
+
+> **Historical decision record:** This ADR preserves the decision and platform
+> state of its phase. For present behavior, follow [Current platform status](../status.md),
+> the [Feature Pack guide](../capabilities.md), and the [App Factory guide](../app-template.md).
 
 ## Context
 

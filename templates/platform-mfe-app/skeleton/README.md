@@ -130,8 +130,8 @@ focused tests (see `docs/feature-packs.md` in the platform repository):
 
 {% for capability in values.capabilities %}{% if capability in featurePacks %}- **${{ capability }}** — route `/${{ capability }}` (see `src/feature-packs/${{ capability }}/`)
 {% endif %}{% endfor %}
-Of these, the following are **composed** — wired into this application's
-code, not just recorded (see `docs/capabilities.md` in the
+Separately, the following **infrastructure capabilities** are composed — wired
+into this application's code, not just recorded (see `docs/capabilities.md` in the
 `platform-control-plane` App Factory repo for the composition model):
 
 {% for capability in values.capabilities %}{% if capability in composedCapabilities %}- **${{ capability }}** — see `src/capabilities/${{ capability }}/`
@@ -161,7 +161,7 @@ permission checks fail closed.
 
 - `platform-app.json` `runtime.status` is `not-configured` — no Module
   Federation host or remote wiring exists yet.
-- Requested capabilities outside the composed platform capabilities and
+- Requested identifiers outside the composed infrastructure capabilities and
   frontend Feature Packs are recorded only; nothing beyond
   `platform-app.json` reflects them yet.
 - The health endpoint (`/health` under `VITE_API_BASE_URL`) is an example
@@ -189,7 +189,7 @@ e2e/              Playwright smoke specs
 
 ## What comes later
 
-Runtime Module Federation loading, the Super App shell, full
+Runtime Module Federation loading, the Super App shell, provider-backed
 authentication/RBAC enforcement, and deployment are out of scope for this
 generated foundation and are planned for a later App Factory phase. See
 docs/feature-packs.md and docs/capabilities.md in
