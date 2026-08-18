@@ -186,8 +186,8 @@ capabilities `notifications`, `i18n`, and `observability` are composed into
 `src/capabilities/` when selected, while the eight current frontend Feature
 Packs are composed into `src/feature-packs/` (see
 [capabilities.md](./capabilities.md) and [feature-packs.md](./feature-packs.md));
-`tenant`, `desktop-ready`, and `mobile-ready` remain recorded only. `theme` is
-an always-on foundation. The generated README explicitly lists what was
+`tenant`, `desktop-ready`, and `mobile-ready` remain recorded only.
+`theme` is an always-on foundation. The generated README explicitly lists what was
 generated, which requested identifiers are composed, always-on, or recorded
 only, how to run validation
 (`npm ci && npm run typecheck && npm run build`), and that Module
