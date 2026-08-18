@@ -30,6 +30,58 @@ export { NotFoundState } from './components/feedback/not-found-state.js';
 export type { NotFoundStateProps } from './components/feedback/not-found-state.js';
 export { QueryBoundary } from './components/feedback/query-boundary.js';
 export type { QueryBoundaryProps } from './components/feedback/query-boundary.js';
+export { DeniedState } from './components/feedback/denied-state.js';
+export type { DeniedStateProps } from './components/feedback/denied-state.js';
+
+// Reusable application patterns. These components provide structure and
+// behavior; routes, copy, data, policy, and domain composition stay in apps.
+export { ApplicationShell } from './components/patterns/application-shell.js';
+export type {
+  ApplicationNavItem,
+  ApplicationShellProps,
+} from './components/patterns/application-shell.js';
+export {
+  ApplicationPage,
+  PageHeader,
+  PageSection,
+} from './components/patterns/page.js';
+export type {
+  ApplicationPageProps,
+  PageHeaderProps,
+  PageSectionProps,
+} from './components/patterns/page.js';
+export {
+  DataTable,
+  DataTableSkeleton,
+  SearchFilterToolbar,
+} from './components/patterns/data-page.js';
+export type {
+  DataTableColumn,
+  DataTableProps,
+  DataTableSkeletonProps,
+  SearchFilterToolbarProps,
+} from './components/patterns/data-page.js';
+export {
+  FormField,
+  FormPage,
+  FormSection,
+} from './components/patterns/form-page.js';
+export type {
+  FormFieldProps,
+  FormPageProps,
+  FormSectionProps,
+} from './components/patterns/form-page.js';
+export { DetailLayout, DetailList } from './components/patterns/detail-page.js';
+export type {
+  DetailItem,
+  DetailLayoutProps,
+  DetailListProps,
+} from './components/patterns/detail-page.js';
+export { SettingsLayout } from './components/patterns/settings-layout.js';
+export type {
+  SettingsLayoutProps,
+  SettingsNavItem,
+} from './components/patterns/settings-layout.js';
 
 // UI primitives (Radix-based)
 export { Avatar } from './components/ui/avatar.js';

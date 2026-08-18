@@ -64,12 +64,96 @@ Generated applications must not recreate:
 - generic loading/error/empty/table/form interaction behavior already covered
   by the shared package.
 
-The generated application does own the concrete shell, routes, navigation
-items, domain pages, and data. The current platform intentionally does not
-export one universal application shell because products have different
-information architectures. Extend the generated shell instead of creating a
-second one, and propose a platform promotion when the behavior is truly
-product-agnostic.
+The generated application owns concrete route registration, navigation
+content, domain pages, data, and product information architecture. The
+platform supplies neutral shell and page-pattern building blocks through
+`@platform/ui`, but does not dictate which sections or nav items a product
+must expose. Extend the generated composition and propose a platform
+promotion when behavior is genuinely product-agnostic.
+
+## Shared primitives (`@platform/ui`)
+
+Radix-based, accessible by default: `Avatar`, `Badge`, `Button`, `Card`,
+`Checkbox`, `ConfirmDialog`, `Dialog`, `DropdownMenu`, `Input`, `Label`,
+`Select`, `Sheet`, `Skeleton`, `Spinner`, `Switch`, `Tabs`, `Toast`
+(`ToastProvider`/`useToast`), `Tooltip`. Plus feedback states
+(`LoadingState`, `ErrorState`, `EmptyState`, `NotFoundState`,
+`QueryBoundary`) and theme (`ThemeProvider`, `ThemeToggle`). All are
+rendered live, in both themes, in the platform Design System Portal - treat
+that portal as the visual source of truth after any `@platform/ui` change.
+The generated application's `/components`, `/table`, and `/form` routes are
+developer verification pages only; they are not a second catalog, design-
+system implementation, or application-facing default. They are deliberately
+absent from the generated shell navigation and home page. A product should
+remove or replace them when it establishes its own information architecture.
+
+`Sheet` and `ConfirmDialog` were promoted in this phase after the
+Workspace Hub exercise showed a developer hand-rolling both from raw
+Radix primitives just to get an off-canvas nav drawer and a
+confirm-before-delete flow - functionality with no product-specific
+content, needed by nearly every multi-page application. `Dialog` is
+deliberately centered-only; `Sheet` is the edge-anchored counterpart
+(`side="left" | "right" | "top" | "bottom"`) for drawers, filter panels,
+and detail panels.
+
+## Interaction standards
+
+- **Loading**: `Spinner` for indeterminate waits, `Skeleton` for
+  content-shaped placeholders where layout should not shift once data
+  arrives.
+- **Pending/disabled**: form controls and buttons use the native
+  `disabled` attribute plus `disabled:opacity-50
+disabled:pointer-events-none` (already in the `btn`/`input` shortcuts) -
+  don't hide a pending control, disable it so its position and focus
+  target stay stable.
+- **Empty / error / not-found**: `EmptyState` / `ErrorState` /
+  `NotFoundState`, composed by `QueryBoundary` around a TanStack Query
+  result so a data view gets all three states (plus loading) without each
+  screen re-implementing the switch.
+- **Success**: `useToast()` for transient confirmation of a completed
+  action (save, create, delete) rather than inline text that requires the
+  user to notice it before it disappears from view.
+- **Confirmation / destructive actions**: `ConfirmDialog` for any
+  irreversible or consequential action. Set `destructive` to use the
+  destructive button variant; it manages its own pending/open state so
+  callers don't re-implement the in-flight sequence. Pass localized
+  confirmLabel, cancelLabel, pendingLabel, and closeLabel values. When
+  onConfirm rejects, the dialog stays open, pending state resets, and
+  onConfirmError owns the product-level error surface and recovery choice.
+- **Form validation**: Zod schema + React Hook Form (see the skeleton's
+  `features/form-demo/`) - validate on submit and surface errors next to
+  the field, not only in a toast.
+- **Asynchronous actions**: route them through TanStack Query
+  (`useQuery`/`useMutation`); let `QueryBoundary` and `useToast` own the
+  loading/error/success surface rather than local `useState` state
+  machines per screen.
+
+Shared feedback primitives take product-facing labels from the application
+instead of inventing English defaults. Pass localized labels to
+`LoadingState`, `ErrorState`, `NotFoundState`, `QueryBoundary`, and
+`ToastProvider`. The application owns the translated message and the
+recovery action; the primitive owns semantics, layout, and interaction.
+
+## Application conventions
+
+Page hierarchy: one `<h1>` per route, section headings as `<h2>`, body
+copy in `text-muted-foreground` under a heading - see any skeleton route
+for the pattern. Content width is capped and centered by `AppShell`
+(`max-w-5xl` by default); pages don't need their own width constraint.
+
+**Navigation and layout use neutral platform patterns, not a fixed information
+architecture.** A single-page settings app and a ten-section SaaS product have
+different navigation needs, so `ApplicationShell` accepts application-owned
+brand, nav items, routes, and content rather than imposing one product layout.
+The platform provides `ApplicationShell` plus the edge-anchored responsive
+nav primitive (`Sheet`) and this convention:
+
+- Persistent nav for wide viewports, `Sheet` (`side="left"`) for narrow
+  ones, sharing one nav-content component between the two so desktop and
+  mobile never drift.
+- Nav items, active-state styling, and route structure are product code -
+  write them against `ApplicationShell`, `Sheet`, and semantic color
+  tokens rather than reinventing an off-canvas overlay.
 
 ## Data-heavy UI
 

@@ -69,9 +69,15 @@ async function loadMergedConfig(
     POSTGRES_PASSWORD: 'backstage',
     POSTGRES_DB: 'backstage',
   };
+  const absoluteTargets = targets.map(target => ({
+    ...target,
+    path: path.isAbsolute(target.path)
+      ? target.path
+      : path.join(repoRoot, target.path),
+  }));
   const { appConfigs } = await loadConfig({
     configRoot: repoRoot,
-    configTargets: targets,
+    configTargets: absoluteTargets,
     // Load the config files with a fixed, hermetic environment so the
     // tests never depend on the machine's actual env vars.
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -110,7 +116,8 @@ describe('merged production config (real config-loader merge semantics)', () => 
   });
 
   it('sign-in requires a matching catalog User entity (no dangerous bypass)', () => {
-    const resolver = config.auth.providers.github.production.signIn.resolvers[0];
+    const resolver =
+      config.auth.providers.github.production.signIn.resolvers[0];
     expect(resolver.resolver).toBe('usernameMatchingUserEntityName');
     // Absent entirely, not just false - a future `true` here would let any
     // GitHub account sign in without a catalog entity.

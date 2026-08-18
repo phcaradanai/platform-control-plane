@@ -23,6 +23,17 @@ The source is under `packages/platform-ui/src/catalog`. Storybook's a11y addon,
 the shared theme provider, semantic tokens, and UnoCSS preset are configured
 in `packages/platform-ui/.storybook`.
 
+The catalog is organized into:
+
+- **Foundations / Primitives** — tokens, themes, controls, surfaces, overlays,
+  identity, feedback, loading, and confirmation states;
+- **Reusable UX Patterns** — responsive navigation, search/filter, and data
+  presentation patterns already supported by the platform;
+- **Feature Packs** — the real generated implementations for Authentication,
+  Profile, RBAC, Dashboard, Settings, Reports, History, and Audit Log,
+  including route composition, navigation metadata, interactions, and
+  replaceable sample-data boundaries.
+
 ## What to review
 
 The current catalog includes:
@@ -35,9 +46,9 @@ The current catalog includes:
   toast behavior;
 - **Reusable UX patterns** — search/filter, data presentation, and responsive
   navigation compositions that applications can adapt;
-- **Application features / Reserved future packs** — a visible boundary for
-  Authentication, Dashboard, Settings, Permissions, Reports, and History UX
-  that is not currently selectable Feature Pack code.
+- **Application features / Feature Packs** — the current Authentication,
+  Profile, RBAC, Dashboard, Settings, Reports, History, and Audit Log
+  implementations, reviewed from the same source consumed by generated apps.
 
 Review each candidate in both themes and at narrow and wide viewport sizes.
 Use keyboard navigation and Escape-to-close where relevant. Check focus rings,

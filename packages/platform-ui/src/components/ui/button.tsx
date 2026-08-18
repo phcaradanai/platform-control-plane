@@ -11,12 +11,10 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
-  default:
-    'bg-primary text-primary-foreground hover:opacity-90 shadow-sm',
+  default: 'bg-primary text-primary-foreground hover:opacity-90 shadow-sm',
   secondary:
     'bg-secondary text-secondary-foreground hover:opacity-90 shadow-sm',
-  outline:
-    'border border-border bg-transparent text-foreground hover:bg-muted',
+  outline: 'border border-border bg-transparent text-foreground hover:bg-muted',
   ghost: 'text-foreground hover:bg-muted',
   destructive:
     'bg-destructive text-destructive-foreground hover:opacity-90 shadow-sm',
@@ -26,12 +24,19 @@ const sizeClasses: Record<NonNullable<ButtonProps['size']>, string> = {
   sm: 'h-9 px-3 text-sm',
   md: 'h-10 px-4 text-sm',
   lg: 'h-11 px-6 text-base',
-  icon: 'h-10 w-10',
+  icon: 'h-11 w-11',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { className, variant = 'default', size = 'md', asChild, ...props },
+    {
+      className,
+      variant = 'default',
+      size = 'md',
+      asChild,
+      type = 'button',
+      ...props
+    },
     ref,
   ) => {
     const Comp = asChild ? Slot : 'button';
@@ -44,6 +49,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           sizeClasses[size],
           className,
         )}
+        type={type}
         {...props}
       />
     );

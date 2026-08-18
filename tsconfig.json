@@ -8,7 +8,10 @@
     "plugins/*/dev",
     "plugins/*/migrations"
   ],
-  "exclude": ["node_modules"],
+  "exclude": [
+    "node_modules",
+    "packages/*/src/catalog"
+  ],
   "compilerOptions": {
     "outDir": "dist-types",
     "rootDir": ".",

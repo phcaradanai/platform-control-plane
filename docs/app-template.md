@@ -36,24 +36,39 @@ skeleton is rendered. It does not add product behavior or install packages.
 
 ## Form fields
 
-| Section              | Field            | Current behavior                                                                                                                  |
-| -------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Section              | Field            | Current behavior                                                                                                                    |
+| -------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | Application identity | `name`           | Required URL-safe slug, also used as repository/catalog component name; lowercase letters, digits, and hyphens; max 63 characters |
-| Application identity | `title`          | Required human-readable display title                                                                                             |
-| Application identity | `description`    | Optional product description; rendered into the repository metadata and README                                                    |
-| Application identity | `owner`          | Required Backstage `OwnerPicker`, filtered to Groups                                                                              |
-| Repository           | `repoUrl`        | Required `RepoUrlPicker`; `github.com` is the only allowed host                                                                   |
-| Repository           | `repoVisibility` | Required `private` or `public`; default is `private`                                                                              |
-| Application metadata | `lifecycle`      | Required `experimental` or `production`; default is `experimental`                                                                |
-| Application metadata | `mode`           | Required `platform-mfe`, `standalone`, or `standalone-and-mfe`; default is `platform-mfe`                                         |
-| Capabilities         | `capabilities`   | Optional unique selection from the closed list in the Feature Pack guide                                                          |
+| Application identity | `title`          | Required human-readable display title                                                                                               |
+| Application identity | `description`    | Optional product description; rendered into the repository metadata and README                                                      |
+| Application identity | `owner`          | Required Backstage `OwnerPicker`, filtered to Groups                                                                          |
+| Repository           | `repoUrl`        | Required `RepoUrlPicker`; `github.com` is the only allowed host                                                         |
+| Repository           | `repoVisibility` | Required `private` or `public`; default is `private`                                                                |
+| Application metadata | `lifecycle`      | Required `experimental` or `production`; default is `experimental`                                                  |
+| Application metadata | `mode`           | Required `platform-mfe`, `standalone`, or `standalone-and-mfe`; default is `platform-mfe`                   |
+| Capabilities         | `capabilities`   | Optional unique multi-select from the closed 15-item list in the Feature Pack guide                                                |
+
+The `capabilities` field is restricted to the curated identifiers documented
+in [capabilities.md](capabilities.md). Every selection is recorded in
+`platform-app.json`; the composed platform capabilities and frontend Feature
+Packs also add generated code as described below.
 
 The default branch is always `main`; it is not a form field.
 
+## Capability selection
+
+The closed enum in `template.yaml` contains the 15 curated identifiers
+listed in the form-field table above. It has no free-text package or install
+field. The eight frontend Feature Packs are composed into generated routes,
+navigation, screens, interactions, and tests; the platform capabilities
+`notifications`, `i18n`, and `observability` are composed into their
+extension points. The other four selections are recorded only in
+`platform-app.json`. See [capabilities.md](./capabilities.md) and
+[feature-packs.md](./feature-packs.md).
+
 ## Runtime mode
 
-The selected `mode` is written to `platform-app.json` and is used by the
-generated app at boot:
+The selected `mode` is written to `platform-app.json` and resolved at boot:
 
 | Mode                 | No host                                         | Compatible host                        |
 | -------------------- | ----------------------------------------------- | -------------------------------------- |
@@ -69,10 +84,93 @@ not ship a Super App or Module Federation runtime. Every generated
 "runtime": { "type": "module-federation", "status": "not-configured" }
 ```
 
+Unlike recorded capabilities, `mode` has real runtime meaning. The form's
+default, `platform-mfe`, requires a platform host to boot at all. Since no
+Super App shell exists yet, a freshly scaffolded app left at that default
+shows a "Platform host required" screen on `npm run dev` until a host exists
+or `platform-app.json` is changed to `standalone` or
+`standalone-and-mfe`. See [platform-sdk.md](./platform-sdk.md#standalone-vs-hosted)
+and [ADR 0005](./adr/0005-runtime-mode-boundary.md) for the boundary.
+
+## Steps
+
+```text
+fetchBase           -> fetch:template   render templates/platform-mfe-app/skeleton
+pruneCapabilities    -> fs:delete       remove unselected composed platform capabilities
+pruneFeaturePacks    -> fs:delete       remove unselected feature-pack source and route files
+publish              -> publish:github  create + push the GitHub repository (defaultBranch: main)
+register             -> catalog:register register catalog-info.yaml in the new repo
+```
+
+All five are Backstage built-in actions; no custom scaffolder action was
+implemented, per the spec's preference for built-ins.
+
+`pruneCapabilities` (added in Phase 4) deletes
+`src/capabilities/<id>/**` in the fetched working directory for each of
+`notifications`, `i18n`, and `observability` that wasn't selected. The
+following `pruneFeaturePacks` step removes both
+`src/feature-packs/<id>/**` and `src/routes/<id>.tsx` for every unselected
+frontend pack. See [capabilities.md](./capabilities.md)
+and [feature-packs.md](./feature-packs.md) for the full composition model.
+
+`fetchBase` passes `copyWithoutTemplating: ['.github/workflows/**']`.
+Without this, the skeleton's `.github/workflows/ci.yml` would be run
+through the same `${{ ... }}` template engine Backstage uses for
+scaffolder expressions, which is the same delimiter GitHub Actions
+expressions use - `${{ failure() }}` / `${{ github.repository }}` in the
+workflow file would be evaluated against the scaffolder's context and
+fail the render (`Unable to call 'failure', which is undefined or
+falsey`) instead of being copied verbatim.
+
+**Phase 1.1 finding:** the installed
+`@backstage/plugin-scaffolder-backend` version's `fetch:template` action
+handler only wires the _newer_ `copyWithoutTemplating` input into the
+copy-without-rendering behavior - `copyWithoutRender` is still accepted by
+the action's schema (so no validation error) but is silently a no-op. The
+template originally used `copyWithoutRender`, which passed every hermetic
+test in `packages/template-validation` (that test suite reimplements its
+own copy-skip logic rather than exercising the real handler) but failed
+the first real scaffolder task run against this backend version. Fixed by
+switching to `copyWithoutTemplating`; the test suite's helper and
+assertions were renamed to match.
+
+## What gets generated
+
+```text
+README.md
+package.json
+tsconfig.json
+src/index.ts
+catalog-info.yaml
+platform-app.json
+.env.example
+.gitignore
+.github/workflows/ci.yml
+```
+
+`platform-app.json` records the exact form selections in the shape
+required by the spec:
+
+```json
+"runtime": { "type": "module-federation", "status": "not-configured" }
+```
+
 That field is metadata for the future runtime boundary; it does not mean that
 Module Federation is installed.
 
 ## Generated output
+
+`runtime.status` is always `not-configured` - no Module Federation runtime
+is installed or wired up by this phase. As of Phase 4, `notifications`,
+`i18n`, and `observability` are composed into `src/capabilities/` when
+selected, while all current frontend packs are composed into
+`src/feature-packs/` (see [capabilities.md](./capabilities.md) and
+[feature-packs.md](./feature-packs.md)); `tenant`, `theme`,
+`desktop-ready`, and `mobile-ready` remain recorded only. The
+generated README explicitly lists what was generated, which requested
+capabilities are composed versus recorded only, how to run validation
+(`npm ci && npm run typecheck && npm run build`), and that Module
+Federation integration is a later phase.
 
 The repository contains:
 

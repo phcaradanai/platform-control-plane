@@ -7,11 +7,11 @@ metadata:
   description: >-
     Creates a GitHub repository for a new Platform MFE Application from a
     controlled skeleton and registers it in the Software Catalog. Runtime
-    module federation and deployment are added in a later phase. A small,
-    representative set of capabilities (notifications, i18n, observability)
-    is composed into the generated application's code today - see
-    docs/capabilities.md; the remaining curated capabilities are still only
-    recorded in platform-app.json for that later phase.
+    module federation and deployment are added in a later phase. A curated
+    set of frontend feature packs (identity, access, dashboard, settings,
+    reports, history, and audit log) plus platform capabilities (notifications,
+    i18n, observability) is composed into the generated application's code
+    today - see docs/feature-packs.md and docs/capabilities.md.
 spec:
   owner: group:default/platform-team
   type: service
@@ -99,22 +99,80 @@ spec:
           ui:widget: radio
 
     - title: Capabilities
+      # Profile and permission UX consume the authentication identity context.
+      # These schema rules are the App Factory validation boundary: invalid
+      # combinations stop before a repository is generated.
+      allOf:
+        - if:
+            required:
+              - capabilities
+            properties:
+              capabilities:
+                contains:
+                  const: profile
+          then:
+            properties:
+              capabilities:
+                contains:
+                  const: authentication
+        - if:
+            required:
+              - capabilities
+            properties:
+              capabilities:
+                contains:
+                  const: rbac
+          then:
+            properties:
+              capabilities:
+                contains:
+                  const: authentication
+        - if:
+            required:
+              - capabilities
+            properties:
+              capabilities:
+                contains:
+                  const: audit-log
+          then:
+            properties:
+              capabilities:
+                contains:
+                  const: authentication
+        - if:
+            required:
+              - capabilities
+            properties:
+              capabilities:
+                contains:
+                  const: audit-log
+          then:
+            properties:
+              capabilities:
+                contains:
+                  const: rbac
       properties:
         capabilities:
           title: Requested capabilities
           type: array
           description: >-
-            Curated platform capabilities to request for this application.
-            All selections are recorded in platform-app.json.
-            notifications, i18n, and observability are additionally composed
-            into the generated application's code (see docs/capabilities.md);
-            the rest remain requests for a later composition phase.
+            Curated platform capabilities and frontend feature packs to
+            request for this application. All selections are recorded in
+            platform-app.json. Authentication, profile, permissions, dashboard,
+            and settings compose real routes, navigation, screens, and tests;
+            reports and history compose replaceable operational-data UX;
+            audit-log requires authentication and permissions. Notifications,
+            i18n, and observability compose platform integrations. Profile and
+            permissions require authentication. The remaining selections remain
+            recorded for later phases.
           items:
             type: string
             enum:
               - authentication
+              - profile
               - rbac
               - dashboard
+              - settings
               - reports
               - history
               - audit-log
@@ -173,6 +231,29 @@ spec:
       input:
         files:
           - src/capabilities/${{ each.value }}/**
+
+    # Feature packs use the same deterministic render-and-prune mechanism,
+    # but own both a routed screen and its route entry. Removing both keeps
+    # unselected packs out of generated imports, route types, and navigation.
+    - id: pruneFeaturePacks
+      name: Remove Unselected Feature Packs
+      action: fs:delete
+      each:
+        [
+          'authentication',
+          'profile',
+          'rbac',
+          'dashboard',
+          'settings',
+          'reports',
+          'history',
+          'audit-log',
+        ]
+      if: ${{ not (each.value in parameters.capabilities) }}
+      input:
+        files:
+          - src/feature-packs/${{ each.value }}/**
+          - src/routes/${{ each.value }}.tsx
 
     - id: publish
       name: Publish to GitHub

@@ -35,10 +35,10 @@ import { test, expect } from '@playwright/test';
 test('Sign-in page offers Guest only on a default local checkout - no broken GitHub button', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'commit' });
 
   await expect(page.getByText('Guest', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Enter' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /enter/i })).toBeVisible();
 
   await expect(page.getByText('GitHub', { exact: true })).not.toBeVisible();
   await expect(

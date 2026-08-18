@@ -8,7 +8,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'A review boundary for future standardized application features. No feature pack is implemented or selectable in this phase.',
+          'A review boundary for future standardized application features. Identity and access packs are reviewed in the real Feature packs catalog; only unimplemented future packs remain here.',
       },
     },
   },
@@ -18,12 +18,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const futureFeatures = [
-  ['Authentication', 'Sign-in and session UX'],
-  ['Dashboard', 'First-run and operational overview'],
-  ['Settings', 'Application and profile configuration'],
-  ['Permissions', 'Roles, access, and denial states'],
-  ['Reports', 'Filtering, export, and long-running work'],
-  ['History', 'Audit timeline and change context'],
+  ['Saved views', 'A later tranche may standardize reusable saved filters'],
+  ['Workflow queue', 'A later tranche may standardize queue and assignment UX'],
+  ['Import review', 'A later tranche may standardize staged import feedback'],
 ] as const;
 
 export const Reserved: Story = {

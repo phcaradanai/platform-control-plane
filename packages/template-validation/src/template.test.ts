@@ -7,8 +7,10 @@ import { renderSkeleton } from './renderSkeleton';
 
 const CURATED_CAPABILITIES = [
   'authentication',
+  'profile',
   'rbac',
   'dashboard',
+  'settings',
   'reports',
   'history',
   'audit-log',
@@ -21,7 +23,16 @@ const CURATED_CAPABILITIES = [
   'mobile-ready',
 ];
 
-const SELECTED_CAPABILITIES = ['authentication', 'rbac', 'dashboard'];
+const SELECTED_CAPABILITIES = [
+  'authentication',
+  'profile',
+  'rbac',
+  'dashboard',
+  'settings',
+  'reports',
+  'history',
+  'audit-log',
+];
 
 const SAMPLE_VALUES = {
   name: 'sample-app',
@@ -116,6 +127,7 @@ describe('platform-mfe-app template.yaml', () => {
     ).toEqual([
       ['fetchBase', 'fetch:template'],
       ['pruneCapabilities', 'fs:delete'],
+      ['pruneFeaturePacks', 'fs:delete'],
       ['publish', 'publish:github'],
       ['register', 'catalog:register'],
     ]);
@@ -196,6 +208,7 @@ describe('platform-mfe-app skeleton', () => {
       'src/routes/components.tsx',
       'src/test/setup.ts',
       'e2e/smoke.spec.ts',
+      'e2e/feature-packs.spec.ts',
     ]) {
       expect(fs.existsSync(path.join(skeletonDir, file))).toBe(true);
     }
@@ -312,6 +325,19 @@ describe('platform-mfe-app skeleton', () => {
     expect(readme).not.toContain('src/components/ui/');
     expect(readme).toContain('do not add src/styles/theme.css');
     expect(readme).not.toContain('src/components/theme/');
+  });
+
+  it('classifies generic routes as developer verification examples', () => {
+    const readme = fs.readFileSync(path.join(skeletonDir, 'README.md'), 'utf8');
+    const shell = fs.readFileSync(
+      path.join(skeletonDir, 'src/components/layout/app-shell.tsx'),
+      'utf8',
+    );
+    expect(readme).toContain('developer verification examples');
+    expect(readme).toContain('not product navigation');
+    expect(shell).not.toContain("href: '/components'");
+    expect(shell).not.toContain("href: '/table'");
+    expect(shell).not.toContain("href: '/form'");
   });
 
   it('ships a component catalog route for visual verification', () => {
