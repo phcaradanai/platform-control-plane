@@ -158,13 +158,17 @@ spec:
           description: >-
             Curated platform capabilities and frontend feature packs to
             request for this application. All selections are recorded in
-            platform-app.json. Authentication, profile, permissions, dashboard,
-            and settings compose real routes, navigation, screens, and tests;
-            reports and history compose replaceable operational-data UX;
-            audit-log requires authentication and permissions. Notifications,
-            i18n, and observability compose platform integrations. Profile and
-            permissions require authentication. The remaining selections remain
-            recorded for later phases.
+            platform-app.json. The eight frontend Feature Packs compose real
+            routes, navigation, screens, interactions, and tests; reports and
+            history compose replaceable operational-data UX; audit-log requires
+            authentication and permissions. The infrastructure capabilities
+            notifications, i18n, and observability compose platform
+            integrations. `theme` is an always-on frontend foundation included
+            in every generated application; selecting it only records the
+            requested identifier and does not control whether theme support is
+            available. `tenant`, `desktop-ready`, and `mobile-ready` are
+            recorded-only identifiers for later phases and do not compose
+            application behavior.
           items:
             type: string
             enum:

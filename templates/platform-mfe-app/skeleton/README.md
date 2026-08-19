@@ -138,12 +138,15 @@ into this application's code, not just recorded (see `docs/capabilities.md` in t
 {% for capability in values.capabilities %}{% if capability in composedCapabilities %}- **${{ capability }}** — see `src/capabilities/${{ capability }}/`
 {% endif %}{% endfor %}
 The following **always-on foundation** is included in every generated
-application, whether or not it appears in the requested capabilities:
+application. The App Factory still exposes `theme` in its capability checklist,
+so selecting the identifier records that request in `platform-app.json`.
+Selection does not enable or disable theme functionality; the foundation is
+present whether or not `theme` is selected:
 
-{% for foundation in alwaysOnFoundations %}- **${{ foundation }}** — provided by the vendored `@platform/ui` theme foundation in every generated app; it is not an optional selection.
+{% for foundation in alwaysOnFoundations %}- **${{ foundation }}** — provided by the vendored `@platform/ui` theme foundation in every generated app; selecting this identifier only records the request and does not control theme functionality.
 {% endfor %}
-Any selected value outside the composed platform capabilities, frontend
-Feature Packs, and always-on foundations is **recorded only** in
+The current **recorded-only** identifiers are `tenant`, `desktop-ready`, and
+`mobile-ready`. A selected recorded-only identifier is written to
 `platform-app.json`; it does not install a page, provider, data source, or
 backend. The exact status of every current identifier is maintained by the
 Platform Control Plane documentation.
