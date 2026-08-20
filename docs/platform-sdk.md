@@ -47,9 +47,11 @@ Each optional capability is supplied through an adapter with a snapshot,
 subscription, and (for auth) sign-in/sign-out methods. Auth adapters may also
 provide a current bearer token and mark a session expired after a backend
 `401`. A host can publish a versioned `window.__PLATFORM_HOST__` object with
-partial adapters; a host auth adapter takes precedence over the generated
-app's default adapter. The SDK does not couple either path to Backstage or to
-a particular provider.
+partial adapters. During generated-app boot, runtime resolution selects a host
+auth adapter before constructing the local OIDC adapter; the host adapter
+therefore takes precedence and local OIDC restore/login does not start in a
+hosted application. The SDK does not couple either path to Backstage or to a
+particular provider.
 
 ## Generated application authentication
 
@@ -58,22 +60,32 @@ The generated skeleton creates `createOidcAuthAdapter()` when both
 OIDC browser-client flow using Authorization Code + PKCE; no client secret is
 accepted or generated. Optional values configure the registered callback,
 post-logout callback, scope, and provider-specific audience. The issuer's
-discovery document, authorization endpoint, token endpoint, redirect URIs, and
-browser CORS policy must be configured by the application deployment.
+discovery document must publish matching issuer, authorization, token, and
+JWKS endpoints. Redirect URIs must be registered for the app origin, and the
+provider must allow the browser's CORS requests.
 
 The adapter keeps access, refresh, and identity tokens in memory. It keeps only
-the short-lived state/nonce/PKCE transaction in `sessionStorage`, restores a
-browser SSO session with an OIDC `prompt=none` round trip, refreshes an expired
-access token when a refresh token is available, and clears local state on
-expiry, sign-out, or a backend `401`. API calls use the adapter's optional
-`getAccessToken()` through `src/api/client.ts` and send a bearer token; the API
-must validate that token and enforce authorization. Decoded ID-token claims are
-used only for display identity; they are not an authorization decision.
+the short-lived state/nonce/PKCE transaction in `sessionStorage`, and restores
+the current route's pathname, query, and hash through an OIDC `prompt=none`
+round trip. The callback validates the transaction state and age, and return
+paths are reduced to safe same-origin paths. An ID token is
+verified against the discovery JWKS with an allowed signing algorithm and
+issuer, client/audience, `azp` when required, nonce, and time-claim checks;
+decoding a JWT payload alone is never treated as proof of identity. The
+adapter refreshes an expired access token when possible and clears local state
+on expiry, sign-out, or a backend `401`.
+
+Identity-provider operations have a bounded timeout (10 seconds by default) and
+accept cancellation. The generated API client applies its own timeout across
+token acquisition and the API request, forwards caller cancellation, and
+normalizes failures. API calls send a bearer token through the adapter; the
+backend must validate that token and enforce authorization.
 
 With no OIDC configuration, the generated app deliberately reports auth as
-unavailable. A host adapter can provide the same stable contract in hosted
-mode, including a different session transport, without changing Feature Pack
-code.
+unavailable. In hosted mode, a supplied host adapter is selected before local
+OIDC construction and may use a different session transport without changing
+Feature Pack code. A failed silent restore settles into a signed-out/error
+state with an explicit interactive retry and does not create a redirect loop.
 
 ## Runtime modes
 
@@ -122,8 +134,9 @@ its own null-checking convention.
 
 When auth is ready, `useAuth()` also exposes `phase: 'idle' | 'pending' |
 'error'`, an optional provider error, and `signIn({ returnPath })`. The return
-path is a path-only UX hint for the provider; feature packs sanitize it to a
-same-origin path and the provider/backend remains responsible for the real
+path is a path-only UX hint for the provider; feature packs preserve the
+current nested pathname/query/hash where possible and sanitize it to a
+same-origin path. The provider/backend remains responsible for the real
 redirect.
 
 ## Standalone vs. hosted

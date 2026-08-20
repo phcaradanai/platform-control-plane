@@ -67,10 +67,10 @@ the Platform Control Plane.
 - **Identity and access UX** — when selected, Authentication, Profile, and
   Permissions packs compose provider-neutral sign-in, current-user, route
   guard, denied, and permission-aware action states through `@platform/sdk`.
-  With public OIDC configuration, the generated app supplies a real
-  Authorization Code + PKCE adapter; a compatible host adapter may override it.
-  They fail clearly when neither is configured and do not provide backend
-  security.
+  At boot, a compatible host adapter is selected before local OIDC
+  construction; with no host adapter, public OIDC configuration supplies the
+  Authorization Code + PKCE adapter. They fail clearly when neither is
+  configured and do not provide backend security.
 - **Operational data UX** — when selected, Reports, History, and Audit Log add
   real catalog/table/filter/detail flows using typed, replaceable data-source
   contracts. Illustrative local sources make the generated UX usable without
@@ -107,12 +107,18 @@ Copy `.env.example` to `.env.local`:
 
 The auth configuration accepts no client secret. The SDK uses Authorization
 Code + PKCE, keeps access/refresh/identity tokens in memory, stores only the
-short-lived PKCE transaction in `sessionStorage`, restores an existing OIDC
-browser session with `prompt=none`, refreshes when possible, and clears local
-state on expiry, sign-out, or a backend `401`. The active access token is
-attached to API requests by `src/api/client.ts`; the API/backend must validate
-it and enforce authorization. Backstage operator sign-in is separate and is
-not reused as generated-app end-user authentication.
+short-lived PKCE transaction in `sessionStorage`, and restores an existing
+OIDC browser session with `prompt=none` while preserving a safe nested
+return path after validating callback state and transaction age. ID tokens are
+verified against discovery JWKS for signature,
+issuer, client/audience, `azp` when applicable, nonce, and time claims;
+the browser does not treat decoded claims as proof or as an authorization
+decision. Provider operations are bounded and cancellable. The active access
+token is attached to API requests by `src/api/client.ts`, whose timeout
+also covers token acquisition; a backend `401` expires the local session.
+The API/backend must validate the bearer token and enforce authorization.
+Backstage operator sign-in is separate and is not reused as generated-app
+end-user authentication.
 
 The `/health` request is an illustrative endpoint. This repository generates
 no backend. Add product endpoints under `src/api/` and route every request

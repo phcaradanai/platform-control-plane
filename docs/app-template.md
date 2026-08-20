@@ -221,10 +221,18 @@ The repository contains:
 The generated app has no backend. Its `/health` example demonstrates the API
 boundary and fails gracefully when no service is running. When the optional
 OIDC issuer and public client ID are configured, `src/lib/platform-auth.ts`
-creates the SDK's Authorization Code + PKCE adapter; `src/api/client.ts`
-obtains its bearer token through that boundary. Host-provided auth adapters can
-override it at runtime, and backend token validation/authorization remain
-outside the generated frontend.
+creates the SDK's provider-neutral Authorization Code + PKCE adapter only
+after runtime/host resolution. A host-provided auth adapter is selected first,
+so hosted applications do not start local OIDC restore or login; without a
+host adapter, the configured public OIDC client is the local fallback. The
+adapter keeps tokens in memory, stores only the short-lived transaction in
+`sessionStorage`, validates callback state and transaction age, preserves a
+safe nested return path during restore, validates ID tokens against discovery
+JWKS, and bounds provider operations. The API
+client obtains its bearer token through that boundary, applies timeout and
+cancellation to token acquisition and the request, and expires the local
+session after a backend `401`. Backend token validation and authorization
+remain outside the generated frontend.
 
 ## Generated CI expectations
 
@@ -261,8 +269,10 @@ npm run test:e2e
 Use `standalone` or `standalone-and-mfe` while developing locally unless a
 compatible host is already available. To exercise generated authentication,
 set both public OIDC variables in `.env.local` and register the app callback
-with the provider; do not put a client secret in Vite environment variables.
-Then read
+with the provider. The provider discovery document must expose matching issuer,
+token, authorization, and JWKS endpoints, and the registered redirect URIs
+must be same-origin with the app. Do not put a client secret in Vite
+environment variables. Then read
 [Business-domain development](business-domain-development.md) for the product
 ownership boundary and [Backend integration boundaries](backend-integration.md)
 for real providers and APIs.

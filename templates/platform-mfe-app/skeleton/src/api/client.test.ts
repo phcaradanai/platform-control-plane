@@ -59,6 +59,55 @@ describe('api client', () => {
     });
   });
 
+  it('bounds a fetch implementation that ignores abort signals', async () => {
+    fetchMock.mockImplementation(
+      () => new Promise<Response>(() => {}),
+    );
+
+    await expect(api.get('/health', { timeoutMs: 25 })).rejects.toMatchObject({
+      name: 'ApiError',
+      code: 'TIMEOUT',
+    });
+  });
+
+  it('times out while token acquisition is hung and never starts the fetch', async () => {
+    configurePlatformAuth({
+      getSnapshot: () => ({ isAuthenticated: true, user: { id: 'user-1' } }),
+      subscribe: () => () => {},
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      getAccessToken: () => new Promise<string | null>(() => {}),
+    });
+
+    await expect(
+      api.get('/protected', { timeoutMs: 25 }),
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      code: 'TIMEOUT',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('cancels hung token acquisition when the caller aborts', async () => {
+    configurePlatformAuth({
+      getSnapshot: () => ({ isAuthenticated: true, user: { id: 'user-1' } }),
+      subscribe: () => () => {},
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      getAccessToken: () => new Promise<string | null>(() => {}),
+    });
+    const controller = new AbortController();
+    const promise = api.get('/protected', {
+      signal: controller.signal,
+      timeoutMs: 1_000,
+    });
+    await Promise.resolve();
+    controller.abort();
+
+    await expect(promise).rejects.toMatchObject({ name: 'AbortError' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('propagates an external abort as AbortError (query cancellation)', async () => {
     fetchMock.mockImplementation(
       (_url: string, init?: RequestInit) =>
@@ -85,6 +134,7 @@ describe('api client', () => {
   });
 
   it('attaches a current bearer token from the platform auth boundary', async () => {
+    const getAccessToken = vi.fn().mockResolvedValue('access-token-1');
     configurePlatformAuth({
       getSnapshot: () => ({
         isAuthenticated: true,
@@ -93,12 +143,15 @@ describe('api client', () => {
       subscribe: () => () => {},
       signIn: vi.fn(),
       signOut: vi.fn(),
-      getAccessToken: vi.fn().mockResolvedValue('access-token-1'),
+      getAccessToken,
     });
     fetchMock.mockResolvedValue(jsonResponse({ status: 'ok' }));
 
     await api.get('/protected');
 
+    expect(getAccessToken).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+    });
     const init = fetchMock.mock.calls[0]![1] as RequestInit;
     expect(new Headers(init.headers).get('Authorization')).toBe(
       'Bearer access-token-1',
@@ -141,5 +194,6 @@ describe('api client', () => {
       code: 'HTTP_ERROR',
     });
     expect(handleUnauthorized).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 });

@@ -1,11 +1,29 @@
-import type {
-  AuthAdapter,
-} from './types.js';
+import type { AuthAccessTokenOptions, AuthAdapter } from './types.js';
 import type { AuthPhase, AuthSignInOptions, PlatformUser } from '../types.js';
+import {
+  createLocalJWKSet,
+  jwtVerify,
+  type JSONWebKeySet,
+  type JWTPayload,
+} from 'jose';
 
 const CLOCK_SKEW_MS = 30_000;
 const TRANSACTION_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_SCOPE = 'openid profile email';
+const DEFAULT_TIMEOUT_MS = 10_000;
+const MAX_ID_TOKEN_AGE_SECONDS = TRANSACTION_TTL_MS / 1000;
+const ALLOWED_ID_TOKEN_ALGORITHMS = [
+  'RS256',
+  'RS384',
+  'RS512',
+  'PS256',
+  'PS384',
+  'PS512',
+  'ES256',
+  'ES384',
+  'ES512',
+  'EdDSA',
+];
 
 export interface StorageLike {
   getItem(key: string): string | null;
@@ -34,6 +52,8 @@ export interface OidcAuthConfig {
   location?: OidcLocation;
   /** Injectable for tests; production uses Date.now. */
   now?: () => number;
+  /** Maximum duration of each identity-provider operation. */
+  timeoutMs?: number;
 }
 
 export interface OidcLocation {
@@ -44,14 +64,18 @@ export interface OidcLocation {
 }
 
 interface OidcMetadata {
+  issuer: string;
   authorization_endpoint: string;
   token_endpoint: string;
+  jwks_uri: string;
   end_session_endpoint?: string;
 }
 
-interface OidcClaims {
-  sub?: unknown;
-  nonce?: unknown;
+interface OidcClaims extends JWTPayload {
+  sub?: string;
+  nonce?: string;
+  auth_time?: number;
+  azp?: string;
   name?: unknown;
   preferred_username?: unknown;
   email?: unknown;
@@ -64,6 +88,8 @@ interface StoredTokens {
   refreshToken?: string;
   idToken: string;
   user: PlatformUser;
+  authorizedParty?: string;
+  authTime?: number;
 }
 
 interface AuthTransaction {
@@ -82,6 +108,25 @@ interface AuthSnapshot {
   error?: string;
 }
 
+interface JsonResponse {
+  response: Response;
+  body: unknown;
+}
+
+class OidcRequestTimeoutError extends Error {
+  constructor() {
+    super('Identity provider request timed out.');
+    this.name = 'OidcRequestTimeoutError';
+  }
+}
+
+class OidcSessionChangedError extends Error {
+  constructor() {
+    super('The authentication session changed while refreshing.');
+    this.name = 'OidcSessionChangedError';
+  }
+}
+
 /**
  * Browser OIDC adapter for public clients. It uses Authorization Code + PKCE,
  * never accepts a client secret, keeps tokens in memory, and leaves
@@ -98,6 +143,7 @@ class OidcAuthController implements AuthAdapter {
   private readonly fetchImpl: typeof fetch;
   private readonly location: OidcLocation;
   private readonly now: () => number;
+  private readonly timeoutMs: number;
   private readonly transactionStorageKey: string;
   private readonly listeners = new Set<() => void>();
   private snapshot: AuthSnapshot = {
@@ -106,7 +152,11 @@ class OidcAuthController implements AuthAdapter {
     phase: 'pending',
   };
   private metadataPromise: Promise<OidcMetadata> | undefined;
-  private refreshPromise: Promise<string | null> | undefined;
+  private jwksPromise: Promise<ReturnType<typeof createLocalJWKSet>> | undefined;
+  private refreshPromise: Promise<string> | undefined;
+  private refreshGeneration: number | undefined;
+  private refreshController: AbortController | undefined;
+  private sessionGeneration = 0;
   private tokens: StoredTokens | undefined;
   private readonly initialization: Promise<void>;
 
@@ -117,16 +167,19 @@ class OidcAuthController implements AuthAdapter {
     this.redirectUri = validateRedirectUri(
       config.redirectUri ?? defaultRedirectUri(this.location),
       'redirectUri',
+      this.location.origin,
     );
     this.postLogoutRedirectUri = validateRedirectUri(
       config.postLogoutRedirectUri ?? this.redirectUri,
       'postLogoutRedirectUri',
+      this.location.origin,
     );
     this.scope = config.scope?.trim() || DEFAULT_SCOPE;
     this.audience = config.audience?.trim() || undefined;
     this.storage = config.storage ?? browserStorage();
     this.fetchImpl = config.fetch ?? globalFetch();
     this.now = config.now ?? Date.now;
+    this.timeoutMs = normalizeTimeout(config.timeoutMs);
     this.transactionStorageKey = `platform-sdk:oidc:${this.clientId}:transaction`;
     this.initialization = this.restoreSession();
   }
@@ -183,15 +236,16 @@ class OidcAuthController implements AuthAdapter {
         logoutUrl.searchParams.set('id_token_hint', idToken);
       }
       this.location.assign(logoutUrl.toString());
-      await new Promise<void>(() => {});
     } catch {
       // Local sign-out has already completed. If the provider is unavailable,
       // do not keep the user signed in locally or expose provider details.
     }
   };
 
-  getAccessToken = async (): Promise<string | null> => {
-    await this.initialization;
+  getAccessToken = async (
+    options: AuthAccessTokenOptions = {},
+  ): Promise<string | null> => {
+    await raceWithAbort(this.initialization, options.signal);
     const tokens = this.readTokens();
     if (!tokens) {
       return null;
@@ -203,9 +257,19 @@ class OidcAuthController implements AuthAdapter {
       this.expireSession();
       return null;
     }
+    const generation = this.sessionGeneration;
     try {
-      return await this.refresh(tokens);
-    } catch {
+      return await this.refresh(tokens, generation, options.signal);
+    } catch (error) {
+      if (options.signal?.aborted) {
+        throw abortError();
+      }
+      if (
+        generation !== this.sessionGeneration ||
+        error instanceof OidcSessionChangedError
+      ) {
+        return null;
+      }
       this.expireSession();
       return null;
     }
@@ -231,7 +295,11 @@ class OidcAuthController implements AuthAdapter {
         }
         // Tokens remain memory-only. A refresh asks the IdP's existing browser
         // session for a new code without showing a login screen.
-        await this.startAuthorization('none', '/', 'restore');
+        await this.startAuthorization(
+          'none',
+          currentLocationPath(this.location),
+          'restore',
+        );
         return;
       }
       if (tokens.expiresAt > this.now() + CLOCK_SKEW_MS) {
@@ -243,7 +311,7 @@ class OidcAuthController implements AuthAdapter {
         return;
       }
       try {
-        await this.refresh(tokens);
+        await this.refresh(tokens, this.sessionGeneration);
       } catch {
         this.expireSession();
       }
@@ -256,6 +324,7 @@ class OidcAuthController implements AuthAdapter {
     const url = new URL(this.location.href);
     const code = url.searchParams.get('code');
     const providerError = url.searchParams.get('error');
+    const responseIssuer = url.searchParams.get('iss');
     if (!code && !providerError) {
       return false;
     }
@@ -267,8 +336,10 @@ class OidcAuthController implements AuthAdapter {
 
     if (
       !transaction ||
+      this.now() - transaction.createdAt < 0 ||
       this.now() - transaction.createdAt > TRANSACTION_TTL_MS ||
-      transaction.state !== callbackState
+      transaction.state !== callbackState ||
+      (responseIssuer !== null && !sameIssuer(responseIssuer, this.issuerUrl))
     ) {
       this.setActionError('The sign-in response could not be verified. Try again.');
       return true;
@@ -329,7 +400,10 @@ class OidcAuthController implements AuthAdapter {
       state,
       nonce,
       codeVerifier,
-      returnPath: safeReturnPath(returnPath, this.location.origin),
+      returnPath: safeReturnPath(
+        returnPath ?? currentLocationPath(this.location),
+        this.location.origin,
+      ),
       createdAt: this.now(),
       mode,
     };
@@ -347,7 +421,7 @@ class OidcAuthController implements AuthAdapter {
     authorizationUrl.searchParams.set('nonce', nonce);
     authorizationUrl.searchParams.set(
       'code_challenge',
-      await pkceChallenge(codeVerifier),
+      await withTimeout(() => pkceChallenge(codeVerifier), this.timeoutMs),
     );
     authorizationUrl.searchParams.set('code_challenge_method', 'S256');
     if (prompt) {
@@ -397,32 +471,62 @@ class OidcAuthController implements AuthAdapter {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
-  private discover(): Promise<OidcMetadata> {
+  private discover(signal?: AbortSignal): Promise<OidcMetadata> {
     if (!this.metadataPromise) {
-      this.metadataPromise = this.fetchMetadata().catch(error => {
+      this.metadataPromise = this.fetchMetadata(signal).catch(error => {
         this.metadataPromise = undefined;
         throw error;
       });
     }
-    return this.metadataPromise;
+    return raceWithAbort(this.metadataPromise, signal);
   }
 
-  private async fetchMetadata(): Promise<OidcMetadata> {
-    const response = await this.fetchImpl(
+  private async fetchMetadata(signal?: AbortSignal): Promise<OidcMetadata> {
+    const result = await this.requestJson(
       `${this.issuerUrl}/.well-known/openid-configuration`,
       { headers: { Accept: 'application/json' } },
+      signal,
     );
+    const { response, body } = result;
     if (!response.ok) {
       throw new Error(`Identity provider discovery failed (HTTP ${response.status}).`);
     }
-    const metadata = (await response.json()) as Partial<OidcMetadata>;
-    if (
-      typeof metadata.authorization_endpoint !== 'string' ||
-      typeof metadata.token_endpoint !== 'string'
-    ) {
+    if (!isRecord(body)) {
       throw new Error('Identity provider discovery returned an incomplete configuration.');
     }
-    return metadata as OidcMetadata;
+    if (
+      typeof body.issuer !== 'string' ||
+      !sameIssuer(body.issuer, this.issuerUrl)
+    ) {
+      throw new Error('Identity provider discovery returned an unexpected issuer.');
+    }
+    const jwksUri = validateMetadataEndpoint(body.jwks_uri, 'jwks_uri');
+    const endSessionEndpoint = body.end_session_endpoint;
+    if (
+      endSessionEndpoint !== undefined &&
+      typeof endSessionEndpoint !== 'string'
+    ) {
+      throw new Error('Identity provider discovery returned an invalid logout endpoint.');
+    }
+    return {
+      issuer: this.issuerUrl,
+      authorization_endpoint: validateMetadataEndpoint(
+        body.authorization_endpoint,
+        'authorization_endpoint',
+      ),
+      token_endpoint: validateMetadataEndpoint(
+        body.token_endpoint,
+        'token_endpoint',
+      ),
+      jwks_uri: jwksUri,
+      end_session_endpoint:
+        endSessionEndpoint === undefined
+          ? undefined
+          : validateMetadataEndpoint(
+              endSessionEndpoint,
+              'end_session_endpoint',
+            ),
+    };
   }
 
   private async exchangeCode(
@@ -438,7 +542,7 @@ class OidcAuthController implements AuthAdapter {
       redirect_uri: this.redirectUri,
       code_verifier: codeVerifier,
     });
-    const response = await this.fetchImpl(metadata.token_endpoint, {
+    const result = await this.requestJson(metadata.token_endpoint, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -446,81 +550,239 @@ class OidcAuthController implements AuthAdapter {
       },
       body,
     });
-    return this.parseTokenResponse(response, undefined, nonce);
+    return this.parseTokenResponse(result, undefined, nonce);
   }
 
-  private async refresh(tokens: StoredTokens): Promise<string | null> {
-    if (this.refreshPromise) {
-      return this.refreshPromise;
+  private refresh(
+    tokens: StoredTokens,
+    generation: number,
+    signal?: AbortSignal,
+  ): Promise<string> {
+    if (
+      this.refreshPromise &&
+      this.refreshGeneration === generation
+    ) {
+      return raceWithAbort(this.refreshPromise, signal);
     }
-    this.refreshPromise = (async () => {
-      const metadata = await this.discover();
+    const controller = new AbortController();
+    const promise = (async () => {
+      const metadata = await this.discover(controller.signal);
       const body = new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: tokens.refreshToken!,
         client_id: this.clientId,
       });
-      const response = await this.fetchImpl(metadata.token_endpoint, {
+      const result = await this.requestJson(metadata.token_endpoint, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body,
-      });
-      const next = await this.parseTokenResponse(response, tokens);
+      }, controller.signal);
+      const next = await this.parseTokenResponse(result, tokens);
+      if (
+        generation !== this.sessionGeneration ||
+        controller.signal.aborted ||
+        this.tokens !== tokens
+      ) {
+        throw new OidcSessionChangedError();
+      }
       this.storeTokens(next);
       this.setAuthenticated(next);
       return next.accessToken;
     })().finally(() => {
-      this.refreshPromise = undefined;
+      if (this.refreshController === controller) {
+        this.refreshPromise = undefined;
+        this.refreshGeneration = undefined;
+        this.refreshController = undefined;
+      }
     });
-    return this.refreshPromise;
+    this.refreshPromise = promise;
+    this.refreshGeneration = generation;
+    this.refreshController = controller;
+    return raceWithAbort(promise, signal);
+  }
+
+  private requestJson(
+    url: string,
+    init: RequestInit,
+    externalSignal?: AbortSignal,
+  ): Promise<JsonResponse> {
+    return withTimeout(async signal => {
+      const response = await this.fetchImpl(url, {
+        ...init,
+        signal,
+      });
+      const body = await response.json().catch(() => null);
+      return { response, body };
+    }, this.timeoutMs, externalSignal);
   }
 
   private async parseTokenResponse(
-    response: Response,
+    result: JsonResponse,
     previous: StoredTokens | undefined,
     expectedNonce?: string,
   ): Promise<StoredTokens> {
-    const body = (await response.json().catch(() => null)) as
-      | Record<string, unknown>
-      | null;
+    const { response, body } = result;
     if (!response.ok) {
       throw new Error('The identity provider rejected the token request.');
     }
-    if (!body) {
+    if (!isRecord(body)) {
       throw new Error('The identity provider returned an invalid token response.');
     }
-    const accessToken = body?.access_token;
-    if (typeof accessToken !== 'string' || accessToken.length === 0) {
+    if (
+      typeof body.token_type !== 'string' ||
+      body.token_type.toLowerCase() !== 'bearer'
+    ) {
+      throw new Error('The identity provider returned an unsupported token type.');
+    }
+    const accessToken = body.access_token;
+    if (typeof accessToken !== 'string' || accessToken.trim().length === 0) {
       throw new Error('The identity provider returned no access token.');
     }
-    const idToken =
-      typeof body.id_token === 'string' ? body.id_token : previous?.idToken;
+    const rawIdToken = body.id_token;
+    if (
+      rawIdToken !== undefined &&
+      (typeof rawIdToken !== 'string' || rawIdToken.trim().length === 0)
+    ) {
+      throw new Error('The identity provider returned an invalid identity token.');
+    }
+    const idToken = rawIdToken ?? previous?.idToken;
     if (!idToken) {
       throw new Error('The identity provider returned no identity token.');
     }
-    const claims = decodeClaims(idToken);
-    if (expectedNonce && claims.nonce !== expectedNonce) {
+    const claims = rawIdToken
+      ? await this.verifyIdToken(
+          rawIdToken,
+          expectedNonce,
+          previous?.user.id,
+          previous?.authorizedParty,
+          previous?.authTime,
+        )
+      : undefined;
+    if (expectedNonce && !claims) {
       throw new Error('The identity provider returned an invalid sign-in response.');
     }
-    const user = previous?.user ?? claimsToUser(claims);
-    const expiresIn =
-      typeof body.expires_in === 'number' && body.expires_in > 0
-        ? body.expires_in
-        : 300;
-    const refreshToken =
-      typeof body.refresh_token === 'string'
-        ? body.refresh_token
-        : previous?.refreshToken;
+    const user = claims ? claimsToUser(claims) : previous?.user;
+    if (!user) {
+      throw new Error('The identity provider returned no authenticated identity.');
+    }
+    const rawExpiresIn = body.expires_in;
+    if (
+      rawExpiresIn !== undefined &&
+      (typeof rawExpiresIn !== 'number' ||
+        !Number.isFinite(rawExpiresIn) ||
+        rawExpiresIn <= 0)
+    ) {
+      throw new Error('The identity provider returned an invalid token lifetime.');
+    }
+    const expiresIn = rawExpiresIn === undefined ? 300 : rawExpiresIn;
+    const rawRefreshToken = body.refresh_token;
+    if (
+      rawRefreshToken !== undefined &&
+      (typeof rawRefreshToken !== 'string' ||
+        rawRefreshToken.trim().length === 0)
+    ) {
+      throw new Error('The identity provider returned an invalid refresh token.');
+    }
+    const refreshToken = rawRefreshToken ?? previous?.refreshToken;
     return {
       accessToken,
       expiresAt: this.now() + expiresIn * 1000,
       refreshToken,
       idToken,
       user,
+      authorizedParty: claims?.azp ?? previous?.authorizedParty,
+      authTime: claims?.auth_time ?? previous?.authTime,
     };
+  }
+
+  private getJwks(): Promise<ReturnType<typeof createLocalJWKSet>> {
+    if (!this.jwksPromise) {
+      this.jwksPromise = this.fetchJwks().catch(error => {
+        this.jwksPromise = undefined;
+        throw error;
+      });
+    }
+    return this.jwksPromise;
+  }
+
+  private async fetchJwks(): Promise<ReturnType<typeof createLocalJWKSet>> {
+    const metadata = await this.discover();
+    const result = await this.requestJson(
+      metadata.jwks_uri,
+      { headers: { Accept: 'application/json' } },
+    );
+    if (!result.response.ok || !isRecord(result.body)) {
+      throw new Error('Identity provider JWKS retrieval failed.');
+    }
+    if (!Array.isArray(result.body.keys)) {
+      throw new Error('Identity provider JWKS is invalid.');
+    }
+    return createLocalJWKSet(result.body as unknown as JSONWebKeySet);
+  }
+
+  private async verifyIdToken(
+    idToken: string,
+    expectedNonce?: string,
+    expectedSubject?: string,
+    expectedAuthorizedParty?: string,
+    expectedAuthTime?: number,
+  ): Promise<OidcClaims> {
+    const keySet = await this.getJwks();
+    const { payload } = await jwtVerify<OidcClaims>(idToken, keySet, {
+      algorithms: ALLOWED_ID_TOKEN_ALGORITHMS,
+      audience: this.clientId,
+      clockTolerance: CLOCK_SKEW_MS / 1000,
+      issuer: this.issuerUrl,
+      maxTokenAge: MAX_ID_TOKEN_AGE_SECONDS,
+      requiredClaims: ['iss', 'sub', 'aud', 'exp', 'iat'],
+    });
+    if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
+      throw new Error('The identity provider returned no user subject.');
+    }
+    if (expectedNonce !== undefined && payload.nonce !== expectedNonce) {
+      throw new Error('The identity provider returned an invalid sign-in response.');
+    }
+    const audience = payload.aud;
+    if (
+      Array.isArray(audience) &&
+      audience.some(value => value !== this.clientId)
+    ) {
+      throw new Error('The identity provider returned an invalid audience.');
+    }
+    if (
+      Array.isArray(audience) &&
+      audience.length > 1 &&
+      payload.azp !== this.clientId
+    ) {
+      throw new Error('The identity provider returned an invalid authorized party.');
+    }
+    if (
+      payload.azp !== undefined &&
+      (typeof payload.azp !== 'string' || payload.azp !== this.clientId)
+    ) {
+      throw new Error('The identity provider returned an invalid authorized party.');
+    }
+    if (
+      payload.auth_time !== undefined &&
+      (!Number.isInteger(payload.auth_time) || payload.auth_time < 0)
+    ) {
+      throw new Error('The identity provider returned an invalid auth time.');
+    }
+    if (expectedSubject !== undefined) {
+      if (payload.sub !== expectedSubject) {
+        throw new Error('The identity provider returned a different subject.');
+      }
+      if (payload.azp !== expectedAuthorizedParty) {
+        throw new Error('The identity provider returned a different authorized party.');
+      }
+      if (payload.auth_time !== expectedAuthTime) {
+        throw new Error('The identity provider returned a different auth time.');
+      }
+    }
+    return payload;
   }
 
   private setAuthenticated(tokens: StoredTokens): void {
@@ -568,6 +830,8 @@ class OidcAuthController implements AuthAdapter {
   }
 
   private clearTokens(): void {
+    this.sessionGeneration += 1;
+    this.refreshController?.abort();
     this.tokens = undefined;
     this.clearTransaction();
   }
@@ -578,7 +842,8 @@ class OidcAuthController implements AuthAdapter {
     }
     try {
       const value = this.storage.getItem(this.transactionStorageKey);
-      return value ? (JSON.parse(value) as AuthTransaction) : null;
+      const transaction = value ? JSON.parse(value) : null;
+      return isAuthTransaction(transaction) ? transaction : null;
     } catch {
       return null;
     }
@@ -593,6 +858,142 @@ export function createOidcAuthAdapter(config: OidcAuthConfig): AuthAdapter {
   return new OidcAuthController(config);
 }
 
+function normalizeTimeout(value: number | undefined): number {
+  if (value === undefined) {
+    return DEFAULT_TIMEOUT_MS;
+  }
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error('OIDC timeoutMs must be a positive finite number.');
+  }
+  return value;
+}
+
+function withTimeout<T>(
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+  externalSignal?: AbortSignal,
+): Promise<T> {
+  if (externalSignal?.aborted) {
+    return Promise.reject(abortError());
+  }
+  const controller = new AbortController();
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timerRef: { id?: ReturnType<typeof setTimeout> } = {};
+    let cleanup = () => {};
+    const resolveOnce = (value: T) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolve(value);
+    };
+    const rejectOnce = (error: unknown) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+    const onAbort = () => {
+      controller.abort();
+      rejectOnce(abortError());
+    };
+    cleanup = () => {
+      if (timerRef.id !== undefined) {
+        clearTimeout(timerRef.id);
+      }
+      externalSignal?.removeEventListener('abort', onAbort);
+    };
+
+    timerRef.id = setTimeout(() => {
+      controller.abort();
+      rejectOnce(new OidcRequestTimeoutError());
+    }, timeoutMs);
+    externalSignal?.addEventListener('abort', onAbort, { once: true });
+
+    let operationPromise: Promise<T>;
+    try {
+      operationPromise = operation(controller.signal);
+    } catch (error) {
+      rejectOnce(error);
+      return;
+    }
+    void operationPromise.then(resolveOnce, rejectOnce);
+  });
+}
+
+function abortError(): DOMException {
+  return new DOMException('The operation was aborted.', 'AbortError');
+}
+
+function raceWithAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) {
+    return promise;
+  }
+  if (signal.aborted) {
+    return Promise.reject(abortError());
+  }
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      reject(abortError());
+    };
+    const resolveOnce = (value: T) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      resolve(value);
+    };
+    const rejectOnce = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      reject(error);
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    void promise.then(resolveOnce, rejectOnce);
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function validateMetadataEndpoint(value: unknown, name: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(
+      `Identity provider discovery returned an invalid ${name}.`,
+    );
+  }
+  return validateUrl(value, `discovery ${name}`);
+}
+
+function isAuthTransaction(value: unknown): value is AuthTransaction {
+  return (
+    isRecord(value) &&
+    typeof value.state === 'string' &&
+    value.state.length > 0 &&
+    typeof value.nonce === 'string' &&
+    value.nonce.length > 0 &&
+    typeof value.codeVerifier === 'string' &&
+    value.codeVerifier.length > 0 &&
+    typeof value.returnPath === 'string' &&
+    typeof value.createdAt === 'number' &&
+    Number.isFinite(value.createdAt) &&
+    (value.mode === 'interactive' || value.mode === 'restore')
+  );
+}
+
 function normalizeIssuer(value: string): string {
   const issuer = validateUrl(value, 'issuerUrl');
   return issuer.replace(/\/+$/, '');
@@ -605,8 +1006,12 @@ function required(value: string, name: string): string {
   return value.trim();
 }
 
-function validateRedirectUri(value: string, name: string): string {
-  return validateUrl(value, name);
+function validateRedirectUri(value: string, name: string, origin: string): string {
+  const redirectUri = validateUrl(value, name);
+  if (new URL(redirectUri).origin !== origin) {
+    throw new Error(`OIDC ${name} must use the application origin.`);
+  }
+  return redirectUri;
 }
 
 function validateUrl(value: string, name: string): string {
@@ -622,7 +1027,10 @@ function validateUrl(value: string, name: string): string {
   if (url.protocol !== 'https:' && !localHttp) {
     throw new Error(`OIDC ${name} must use HTTPS outside local development.`);
   }
-  return url.toString().replace(/\/$/, '');
+  // Preserve registered redirect and endpoint URI spelling. Issuer
+  // comparison removes a trailing slash separately, while redirect URI
+  // matching must remain exact at the provider.
+  return url.toString();
 }
 
 function browserLocation(): OidcLocation {
@@ -654,13 +1062,35 @@ function defaultRedirectUri(location: OidcLocation): string {
   return new URL('/authentication', location.origin).toString();
 }
 
+function currentLocationPath(location: OidcLocation): string {
+  try {
+    const url = new URL(location.href, location.origin);
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return '/';
+  }
+}
+
+function sameIssuer(value: string, expected: string): boolean {
+  try {
+    return normalizeIssuer(value) === expected;
+  } catch {
+    return false;
+  }
+}
+
 function safeReturnPath(value: string | undefined, origin: string): string {
   if (!value) {
     return '/';
   }
   try {
     const url = new URL(value, origin);
-    if (url.origin !== origin || !value.startsWith('/') || value.startsWith('//')) {
+    if (
+      url.origin !== origin ||
+      !value.startsWith('/') ||
+      value.startsWith('//') ||
+      value.includes('\\')
+    ) {
       return '/';
     }
     return `${url.pathname}${url.search}${url.hash}`;
@@ -691,31 +1121,11 @@ function base64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-function decodeClaims(idToken: string): OidcClaims {
-  const parts = idToken.split('.');
-  if (parts.length !== 3) {
-    throw new Error('The identity provider returned an invalid identity token.');
-  }
-  try {
-    const json = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-    const claims = JSON.parse(json) as OidcClaims;
-    if (typeof claims.sub !== 'string' || claims.sub.length === 0) {
-      throw new Error('The identity provider returned no user subject.');
-    }
-    return claims;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('no user subject')) {
-      throw error;
-    }
-    throw new Error('The identity provider returned an invalid identity token.');
-  }
-}
-
 function claimsToUser(claims: OidcClaims): PlatformUser {
   const stringClaim = (value: unknown): string | undefined =>
     typeof value === 'string' && value.length > 0 ? value : undefined;
   return {
-    id: claims.sub as string,
+    id: claims.sub!,
     displayName:
       stringClaim(claims.name) ?? stringClaim(claims.preferred_username),
     email: stringClaim(claims.email),

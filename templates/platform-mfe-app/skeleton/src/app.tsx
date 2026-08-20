@@ -30,6 +30,13 @@ const queryClient = new QueryClient({
 const navigationAdapter = createRouterNavigationAdapter();
 
 export function App({ runtime }: { runtime: ResolvedPlatformRuntime }) {
+  // The generated auth adapter is configured once in main.tsx and is shared
+  // with the API transport. Do not pass a second host auth object here: two
+  // auth identities would let React and API requests observe different
+  // sessions.
+  const runtimeAdapters = { ...runtime.adapters };
+  delete runtimeAdapters.auth;
+
   return (
     <PlatformProvider
       config={{
@@ -37,12 +44,13 @@ export function App({ runtime }: { runtime: ResolvedPlatformRuntime }) {
         runtimeMode: runtime.runtimeMode,
         // Local router bridge is the default; a host that supplies its own
         // navigation adapter overrides it.
-        // A host auth adapter overrides the generated OIDC adapter when one is
-        // supplied; otherwise standalone apps use the configured provider.
+        // Auth is deliberately omitted from runtimeAdapters above so this
+        // stable generated adapter remains the one state source for both
+        // React hooks and the API transport.
         adapters: {
           auth: appAuthAdapter,
           navigation: navigationAdapter,
-          ...runtime.adapters,
+          ...runtimeAdapters,
         },
       }}
     >

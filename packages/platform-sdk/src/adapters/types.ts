@@ -32,9 +32,14 @@ export interface AuthAdapter {
   signIn: (options?: AuthSignInOptions) => Promise<void>;
   signOut: () => Promise<void>;
   /** Returns a current bearer token for an API request, when the provider supports it. */
-  getAccessToken?: () => Promise<string | null>;
+  getAccessToken?: (options?: AuthAccessTokenOptions) => Promise<string | null>;
   /** Marks the local session expired after an API rejects its credential. */
   handleUnauthorized?: () => void;
+}
+
+/** Cancellation context for a bearer-token lookup or refresh. */
+export interface AuthAccessTokenOptions {
+  signal?: AbortSignal;
 }
 
 export interface PermissionsAdapter {

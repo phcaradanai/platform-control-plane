@@ -13,7 +13,7 @@ import { PlatformRuntimeUnavailableError } from '@platform/sdk';
 import './lib/env';
 import { App } from './app';
 import { RuntimeUnavailable } from './components/feedback/runtime-unavailable';
-import { appAuthAdapter, configurePlatformAuth } from './lib/platform-auth';
+import { configurePlatformAuth } from './lib/platform-auth';
 import { resolveAppRuntime } from './lib/platform-runtime';
 {% if 'observability' in values.capabilities %}
 // `observability` capability (see src/capabilities/observability/): installs
@@ -38,7 +38,9 @@ const root = createRoot(container);
 // broken app - see src/lib/platform-runtime.ts.
 try {
   const runtime = resolveAppRuntime();
-  configurePlatformAuth(runtime.adapters?.auth ?? appAuthAdapter);
+  // Resolve the host first. configurePlatformAuth only creates the local
+  // OIDC/standalone fallback when the host does not supply auth.
+  configurePlatformAuth(runtime.adapters?.auth);
   root.render(
     <StrictMode>
       <App runtime={runtime} />

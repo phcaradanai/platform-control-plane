@@ -26,6 +26,7 @@ export type {
 
 export type {
   AuthAdapter,
+  AuthAccessTokenOptions,
   PermissionsAdapter,
   TenantAdapter,
   NavigationAdapter,

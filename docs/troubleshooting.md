@@ -168,15 +168,28 @@ Set both `VITE_AUTH_ISSUER_URL` and `VITE_AUTH_CLIENT_ID` in the generated
 app's `.env.local`. The browser flow uses Authorization Code + PKCE and never
 accepts a client secret. Register the exact callback (by default
 `/authentication`) and post-logout callback with the OIDC provider, enable
-discovery/token endpoint access and browser CORS for the app origin, and set
-`VITE_AUTH_AUDIENCE` only when the provider requires an API audience.
+discovery/token/JWKS endpoint access and browser CORS for the app origin, and
+set `VITE_AUTH_AUDIENCE` only when the provider requires an API audience. The
+discovery issuer must match `VITE_AUTH_ISSUER_URL`; the provider must issue an
+ID token whose signature, client/audience, `azp` when applicable, nonce, and
+time claims pass validation.
 
 With no OIDC configuration, auth is intentionally unavailable unless a hosted
-runtime supplies an `AuthAdapter`. On reload, the generated adapter restores
-the provider's existing browser SSO session with `prompt=none`; it keeps tokens
-in memory, refreshes when possible, and reports the session expired after a
-failed refresh or backend `401`. The API/backend must validate the bearer token;
-the generated UI is not an authorization authority.
+runtime supplies an `AuthAdapter`. The hosted adapter is selected before local
+OIDC construction, so a hosted app does not start a local `prompt=none` flow.
+On reload, the standalone adapter restores the provider's existing browser SSO
+session with `prompt=none`, preserving a safe nested pathname/query/hash; it
+keeps tokens in memory, refreshes when possible, and reports the session
+expired after a failed refresh or backend `401`. A failed silent restore does
+not loop; the UI exposes an interactive sign-in retry. Identity-provider and
+API operations are bounded and cancellable, so a slow provider should settle
+as an auth/API error rather than remain pending. The API/backend must validate
+the bearer token; the generated UI is not an authorization authority.
+
+If the provider returns an identity verification error, check the discovery
+issuer and JWKS, registered client/audience, `azp` for multi-audience tokens,
+the callback nonce, and the token clock. These checks are intentional
+fail-closed behavior, not a need to decode or copy claims manually.
 
 ### Generated CI fails before the build
 

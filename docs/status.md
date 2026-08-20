@@ -24,8 +24,10 @@ Supported and verified on the current `main` implementation:
   and generated GitHub Actions CI.
 - A provider-neutral generated-app authentication path: the SDK's OIDC
   Authorization Code + PKCE adapter supports configured public browser
-  clients, bearer API transport, SSO restore, refresh, expiry, and sign-out;
-  a compatible host adapter remains supported.
+  clients, discovery-JWKS ID-token validation, bounded/cancellable provider
+  calls, bearer API transport, SSO restore, refresh, expiry, and sign-out; a
+  compatible host adapter is selected before local OIDC construction and
+  remains supported.
 - Dynamic generation for the infrastructure capabilities `notifications`,
   `i18n`, and `observability`. A selected module is wired into the generated
   app; an unselected module is pruned.
@@ -44,9 +46,10 @@ These contracts or configurations exist, but require a real provider or
 service before they provide production capability:
 
 - `AuthAdapter` / `useAuth()` use the generated OIDC adapter when public OIDC
-  configuration is supplied, or a compatible platform host when hosted.
-  Standalone mode without either reports `unavailable`; the backend remains
-  authoritative for token validation and authorization.
+  configuration is supplied, or select a compatible platform host before local
+  OIDC construction when hosted. Standalone mode without either reports
+  `unavailable`; browser tokens remain memory-only, and the backend remains
+  authoritative for bearer-token validation and authorization.
 - `PermissionsAdapter` / `usePermissions()` require an authorization provider.
   Standalone mode fails closed: `can()` returns `false`.
 - `TenantAdapter` / `useTenant()` require tenant infrastructure.
