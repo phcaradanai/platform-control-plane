@@ -1,5 +1,10 @@
 # Backstage App Factory - Phase 1 Report
 
+> **Historical phase report — see current documentation.** This report
+> preserves Phase 1 decisions and evidence; it is not the current capability
+> contract. Read [Current platform status](docs/status.md), [Feature Pack guide](docs/capabilities.md),
+> and [Frontend feature packs](docs/feature-packs.md).
+
 ## Scope
 
 Established the Backstage control plane for the App Factory: a standalone

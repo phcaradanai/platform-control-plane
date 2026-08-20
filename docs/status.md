@@ -22,9 +22,17 @@ Supported and verified on the current `main` implementation:
   transport, TanStack Router/Query/Table/Virtual, React Hook Form/Zod,
   vendored `@platform/ui` and `@platform/sdk`, unit tests, Playwright tests,
   and generated GitHub Actions CI.
-- Dynamic generation for `notifications`, `i18n`, and `observability`. A
-  selected module is wired into the generated app; an unselected module is
-  pruned.
+- Dynamic generation for the infrastructure capabilities `notifications`,
+  `i18n`, and `observability`. A selected module is wired into the generated
+  app; an unselected module is pruned.
+- Eight frontend Feature Packs — Authentication, Profile, Permission/RBAC,
+  Dashboard, Settings, Reports, History, and Audit Log. A selected pack is
+  rendered and pruned as real generated frontend code with its route,
+  navigation, screen, interactions, focused tests, and typed frontend/data
+  boundary. Profile and RBAC require Authentication; Audit Log requires both
+  Authentication and RBAC.
+- The `theme` foundation is always on. `tenant`, `desktop-ready`, and
+  `mobile-ready` remain recorded-only selections.
 
 ## Integration boundaries
 
@@ -50,11 +58,10 @@ Not shipped by this repository today:
 
 - A real identity provider for generated applications, enterprise SSO, or
   Keycloak integration.
-- A generated-app profile, settings, dashboard, reports, history, or audit-log
-  Feature Pack with platform-owned data-source contracts. The App Factory enum
-  records several of those requests, but selection alone does not install them.
 - Tenant backend and resource-scoped authorization enforcement for products.
-- Report, history, and audit services or compliance guarantees.
+- Provider/backend services behind the shipped packs: profile persistence,
+  dashboard/settings/report/history data services, audit persistence and
+  immutability, and compliance guarantees.
 - A Super App/host runtime, Module Federation loading, or deployment/runtime
   platform.
 

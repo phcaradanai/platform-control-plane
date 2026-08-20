@@ -1,8 +1,17 @@
 # ADR 0004: Capability composition for the generated application foundation
 
+> **Historical record — see current documentation.** This ADR captures the
+> decision and implementation boundary of its phase. For present behavior,
+> read [Current platform status](../status.md), [Feature Pack guide](../capabilities.md),
+> and [Frontend feature packs](../feature-packs.md).
+
 ## Status
 
 Accepted (Phase 4)
+
+> **Historical decision record:** This ADR preserves the decision and platform
+> state of its phase. For present behavior, follow [Current platform status](../status.md),
+> the [Feature Pack guide](../capabilities.md), and the [App Factory guide](../app-template.md).
 
 ## Context
 
@@ -41,11 +50,13 @@ Two constraints shaped everything else:
 
 ## Decision
 
-1. **Three capabilities are composed: `notifications`, `i18n`,
-   `observability`.** Each is implementable with zero new npm
+1. **At Phase 4, three infrastructure capabilities were composed:
+   `notifications`, `i18n`, `observability`.** Each is implementable with
+   zero new npm
    dependencies (reusing `@platform/ui` primitives already vendored into
    the skeleton, or plain React context), is frontend-only, and needs no
-   new top-level route. The remaining ten stay recorded-only, most because
+   new top-level route. At that phase, the remaining ten curated identifiers
+   stayed recorded-only, most because
    a real version needs infrastructure this phase explicitly excludes
    (`authentication`/`rbac` need a real IdP, `tenant` needs a tenant
    backend, `desktop-ready`/`mobile-ready` need the Super App runtime).
@@ -99,7 +110,7 @@ Two constraints shaped everything else:
   the smallest maintainable foundation over speculative validation
   machinery. The `if:`-based prune mechanism is the natural place to add
   it (`if: ${{ not (each.value in parameters.capabilities) or ('other-id'
-  in parameters.capabilities) }}`-shaped) when a real conflict exists.
+in parameters.capabilities) }}`-shaped) when a real conflict exists.
 - Module Federation/Super App runtime composition, CodeScape integration,
   Keycloak, a tenant backend, and desktop/mobile support remain entirely
   out of scope, unchanged from this phase's brief and consistent with

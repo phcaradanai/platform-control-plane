@@ -1,8 +1,17 @@
 # ADR 0005: Runtime-mode boundary for standalone and platform-hosted execution
 
+> **Historical record — see current documentation.** This ADR captures the
+> decision and implementation boundary of its phase. For present behavior,
+> read [Current platform status](../status.md), [Feature Pack guide](../capabilities.md),
+> and [Frontend feature packs](../feature-packs.md).
+
 ## Status
 
 Accepted (Phase 5)
+
+> **Historical decision record:** This ADR preserves the decision and platform
+> state of its phase. For present behavior, follow [Current platform status](../status.md),
+> the [Feature Pack guide](../capabilities.md), and the [App Factory guide](../app-template.md).
 
 ## Context
 
@@ -12,7 +21,7 @@ scaffolder form and had zero effect on the generated application:
 `App()` always constructed `PlatformProvider` with its default
 `runtimeMode` ("standalone"), regardless of what `mode` said. Separately,
 `@platform/sdk`'s `usePlatformRuntime().runtimeMode` (`'standalone'` |
-`'hosted'`) already existed as the *live* runtime signal, but nothing
+`'hosted'`) already existed as the _live_ runtime signal, but nothing
 could ever produce `'hosted'` - there was no platform-hosted shell, and no
 mechanism for one to tell a generated app it was hosted even if it
 existed.
@@ -30,6 +39,7 @@ implies.
    `resolvePlatformRuntime(mode, host)`**
    (`packages/platform-sdk/src/runtime/resolve.ts`), called once by the
    generated app's `main.tsx` before mounting:
+
    - `standalone` never uses a host, even if one is present - otherwise it
      would be behaviorally identical to `standalone-and-mfe`.
    - `platform-mfe` requires a host; throws

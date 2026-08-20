@@ -124,25 +124,34 @@ ${{ values.capabilities | dump }}
 
 {% set featurePacks = ['authentication', 'profile', 'rbac', 'dashboard', 'settings', 'reports', 'history', 'audit-log'] %}
 {% set composedCapabilities = ['notifications', 'i18n', 'observability'] %}
+{% set alwaysOnFoundations = ['theme'] %}
 The following **frontend feature packs** are composed — each adds a working
 route, shell navigation entry, standard-pattern screen, interactions, and
 focused tests (see `docs/feature-packs.md` in the platform repository):
 
 {% for capability in values.capabilities %}{% if capability in featurePacks %}- **${{ capability }}** — route `/${{ capability }}` (see `src/feature-packs/${{ capability }}/`)
 {% endif %}{% endfor %}
-Of these, the following are **composed** — wired into this application's
-code, not just recorded (see `docs/capabilities.md` in the
+Separately, the following **infrastructure capabilities** are composed — wired
+into this application's code, not just recorded (see `docs/capabilities.md` in the
 `platform-control-plane` App Factory repo for the composition model):
 
 {% for capability in values.capabilities %}{% if capability in composedCapabilities %}- **${{ capability }}** — see `src/capabilities/${{ capability }}/`
 {% endif %}{% endfor %}
-Any selected value outside the composed platform capabilities and frontend
-Feature Packs is **recorded only** in
+The following **always-on foundation** is included in every generated
+application. The App Factory still exposes `theme` in its capability checklist,
+so selecting the identifier records that request in `platform-app.json`.
+Selection does not enable or disable theme functionality; the foundation is
+present whether or not `theme` is selected:
+
+{% for foundation in alwaysOnFoundations %}- **${{ foundation }}** — provided by the vendored `@platform/ui` theme foundation in every generated app; selecting this identifier only records the request and does not control theme functionality.
+{% endfor %}
+The current **recorded-only** identifiers are `tenant`, `desktop-ready`, and
+`mobile-ready`. A selected recorded-only identifier is written to
 `platform-app.json`; it does not install a page, provider, data source, or
 backend. The exact status of every current identifier is maintained by the
 Platform Control Plane documentation.
 
-{% for capability in values.capabilities %}{% if not (capability in composedCapabilities) and not (capability in featurePacks) %}- ${{ capability }}
+{% for capability in values.capabilities %}{% if not (capability in composedCapabilities) and not (capability in featurePacks) and not (capability in alwaysOnFoundations) %}- ${{ capability }}
 {% endif %}{% endfor %}
 
 ## Where product development begins
@@ -161,7 +170,7 @@ permission checks fail closed.
 
 - `platform-app.json` `runtime.status` is `not-configured` — no Module
   Federation host or remote wiring exists yet.
-- Requested capabilities outside the composed platform capabilities and
+- Requested identifiers outside the composed infrastructure capabilities and
   frontend Feature Packs are recorded only; nothing beyond
   `platform-app.json` reflects them yet.
 - The health endpoint (`/health` under `VITE_API_BASE_URL`) is an example
@@ -189,7 +198,7 @@ e2e/              Playwright smoke specs
 
 ## What comes later
 
-Runtime Module Federation loading, the Super App shell, full
+Runtime Module Federation loading, the Super App shell, provider-backed
 authentication/RBAC enforcement, and deployment are out of scope for this
 generated foundation and are planned for a later App Factory phase. See
 docs/feature-packs.md and docs/capabilities.md in

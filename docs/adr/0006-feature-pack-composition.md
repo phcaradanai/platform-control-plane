@@ -1,8 +1,17 @@
 # ADR 0006: Frontend Feature Pack Composition
 
+> **Historical record — see current documentation.** This ADR captures the
+> decision and implementation boundary of its phase. For present behavior,
+> read [Current platform status](../status.md), [Feature Pack guide](../capabilities.md),
+> and [Frontend feature packs](../feature-packs.md).
+
 ## Status
 
 Accepted for Phase 5.5B2.
+
+> **Historical decision record:** This ADR preserves the decision and platform
+> state of its phase. For present behavior, follow [Current platform status](../status.md),
+> the [Feature Pack guide](../capabilities.md), and the [App Factory guide](../app-template.md).
 
 ## Decision
 
@@ -49,8 +58,10 @@ also means selection cannot introduce arbitrary per-pack npm dependencies.
   explicitly allowlisted `@platform/ui` and `@platform/sdk` identifiers
   already provided by the base skeleton.
   The App Factory does not run pack-controlled installs or vary the lockfile.
-  Pack-to-pack dependencies are not implicit; they require a future explicit
-  selection contract.
+  At the time of this decision, pack-to-pack dependencies were not implicit
+  and required a future explicit selection contract. The current implementation
+  now declares and validates Profile -> Authentication, RBAC -> Authentication,
+  and Audit Log -> Authentication + RBAC; see the current Feature Pack guide.
 - The committed route tree is templated per selection so generated apps can
   typecheck before their first build; the TanStack Router plugin regenerates it
   from the pruned route files during build.

@@ -120,15 +120,22 @@ GitHub repository creation does not by itself prove Catalog registration.
 
 ### A capability selection appears to do nothing
 
-That is expected for recorded-only identifiers. Only `notifications`, `i18n`,
-and `observability` currently add source files. Authentication, RBAC,
-dashboard, reports, history, audit-log, tenant, theme, desktop-ready, and
-mobile-ready are not generated feature code today. `theme` is already
-available through `@platform/ui` regardless of selection.
+Selections have three different effects:
 
-There is no current dependency or conflict validation between selections. Do
-not infer that selecting `rbac` wires an authorization provider or that
-selecting `audit-log` creates a data service.
+- `notifications`, `i18n`, and `observability` add infrastructure modules at
+  their documented extension points.
+- Authentication, Profile, Permission/RBAC, Dashboard, Settings, Reports,
+  History, and Audit Log add real frontend Feature Pack routes, navigation,
+  screens, interactions, and focused tests. Their typed frontend/data
+  boundaries still need real providers or product services.
+- `tenant`, `desktop-ready`, and `mobile-ready` are recorded only in
+  `platform-app.json`; `theme` is an always-on `@platform/ui` foundation and
+  is not a meaningful toggle.
+
+Feature Pack dependencies are validated before publication: Profile and RBAC
+require Authentication, and Audit Log requires both Authentication and RBAC.
+This validation selects the required frontend packs; it does not create an
+identity provider, authorization backend, or audit data service.
 
 ## Generated application
 

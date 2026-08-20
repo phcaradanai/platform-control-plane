@@ -1,8 +1,18 @@
 # Backstage App Factory — Phase 3.1 Identity Closure Report
 
+> **Historical phase report — see current documentation.** This report
+> preserves Phase 3.1 decisions and evidence; it is not the current capability
+> contract. Read [Current platform status](../status.md), [Feature Pack guide](../capabilities.md),
+> and [Frontend feature packs](../feature-packs.md).
+
 Repository: `phcaradanai/platform-control-plane`
 Branch: `main`
 Date: 2026-08-09
+
+> **Historical phase report:** This report preserves Phase 3.1 evidence and
+> should not be read as the current platform contract. For present behavior,
+> follow [Current platform status](../status.md), the [Feature Pack guide](../capabilities.md),
+> and the [App Factory guide](../app-template.md).
 
 ## Goal
 
@@ -47,9 +57,9 @@ hand-editing the placeholder org file.
    endpoint that creates apps; the manifest flow requires a logged-in
    browser, which was completed in the account-owner's own browser).
    Credentials live in gitignored `github-app-platform-control-plane-credentials.yaml`
-   + `.env`; only `${AUTH_GITHUB_CLIENT_ID}` / `${AUTH_GITHUB_CLIENT_SECRET}`
-   references appear in tracked config. `docs/github-integration.md` now
-   documents the manifest flow.
+   - `.env`; only `${AUTH_GITHUB_CLIENT_ID}` / `${AUTH_GITHUB_CLIENT_SECRET}`
+     references appear in tracked config. `docs/github-integration.md` now
+     documents the manifest flow.
 3. **Hermetic tests / CI guards**:
    - `packages/backend/src/permissions/signInResolver.test.ts` — the
      production sign-in gate contract (entityRef handed to the catalog
@@ -102,8 +112,8 @@ requests before the permission policy is consulted).
   consent flow (real code issued by GitHub, exchanged by the backend,
   real GitHub user profile returned). The frame callback returned the
   sign-in failure: `Failed to sign-in, unable to resolve user identity.
-  Please verify that your catalog contains the expected User entities
-  that would match your configured sign-in resolver.` — the account had
+Please verify that your catalog contains the expected User entities
+that would match your configured sign-in resolver.` — the account had
   no `User` entity in the production catalog (groups-only skeleton), so
   sign-in was denied.
 - **Provisioned**: the same account was provisioned via
@@ -111,23 +121,23 @@ requests before the permission policy is consulted).
   `platform-admins` membership and the backend rebooted with a test
   overlay pointing the production catalog's identity location at it. The
   sign-in succeeded: `backstageIdentity.identity.userEntityRef =
-  user:default/phcaradanai`, `ownershipEntityRefs = [user:default/phcaradanai,
-  group:default/platform-admins]`, GitHub user token scoped
+user:default/phcaradanai`, `ownershipEntityRefs = [user:default/phcaradanai,
+group:default/platform-admins]`, GitHub user token scoped
   `read:user user:email`.
 
 ### 4. Platform Admin can perform privileged actions
 
 `POST /api/permission/authorize` with the **real signed-in token**:
 
-| Permission | Result |
-|---|---|
-| catalog.entity.read / create | ALLOW |
-| catalog.entity.delete | ALLOW |
-| catalog.location.delete | ALLOW |
-| scaffolder.template.management | ALLOW |
-| catalog.entity.validate | ALLOW |
-| catalog.entity.refresh | ALLOW |
-| scaffolder.task.create / location.create / action.execute | ALLOW |
+| Permission                                                | Result |
+| --------------------------------------------------------- | ------ |
+| catalog.entity.read / create                              | ALLOW  |
+| catalog.entity.delete                                     | ALLOW  |
+| catalog.location.delete                                   | ALLOW  |
+| scaffolder.template.management                            | ALLOW  |
+| catalog.entity.validate                                   | ALLOW  |
+| catalog.entity.refresh                                    | ALLOW  |
+| scaffolder.task.create / location.create / action.execute | ALLOW  |
 
 ### 5. Developer is allowed App Factory actions, denied privileged ones
 
