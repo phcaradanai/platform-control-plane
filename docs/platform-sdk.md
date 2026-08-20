@@ -11,7 +11,7 @@ and any particular identity provider.
 | App identity   | `usePlatformApp()`     | Always available from `platform-app.json`                  |
 | Runtime        | `usePlatformRuntime()` | Always available after boot resolution                     |
 | Navigation     | `useNavigation()`      | Browser History API fallback; apps may bridge their router |
-| Authentication | `useAuth()`            | `status: unavailable` until an auth adapter is supplied    |
+| Authentication | `useAuth()`            | `status: unavailable` until OIDC configuration or a host adapter is supplied |
 | Permissions    | `usePermissions()`     | `status: unavailable`; `can()` always returns `false`      |
 | Tenant         | `useTenant()`          | `status: unavailable` until a tenant adapter is supplied   |
 
@@ -19,13 +19,13 @@ Unavailable auth actions reject with `PlatformCapabilityUnavailableError`.
 The SDK does not invent a fake user, grant, or tenant.
 
 Identity, runtime information, and navigation are core infrastructure with no
-external dependency, so they always work standalone. The SDK defines auth,
-permissions, and tenant adapter contracts but does not implement their real
-providers; it behaves predictably when no provider is wired up. The
-Authentication, Profile, and Permission/RBAC Feature Packs consume these
-contracts without providing an identity provider or security authority. The
-other Feature Packs likewise keep their production data and service authority
-outside the SDK.
+external dependency, so they always work standalone. The SDK defines
+provider-neutral auth, permissions, and tenant contracts and ships a browser
+OIDC adapter for generated applications; it still behaves predictably when no
+provider is wired up. The Authentication, Profile, and Permission/RBAC
+Feature Packs consume these contracts without moving security authority into
+the frontend. The other Feature Packs likewise keep their production data and
+service authority outside the SDK.
 
 ## Provider usage
 
@@ -44,10 +44,36 @@ The generated app mounts the provider once near the root:
 ```
 
 Each optional capability is supplied through an adapter with a snapshot,
-subscription, and (for auth) sign-in/sign-out methods. A host can publish a
-versioned `window.__PLATFORM_HOST__` object with partial adapters. The SDK
-contains this contract and test helpers; the repository does not include a
-production host or identity provider.
+subscription, and (for auth) sign-in/sign-out methods. Auth adapters may also
+provide a current bearer token and mark a session expired after a backend
+`401`. A host can publish a versioned `window.__PLATFORM_HOST__` object with
+partial adapters; a host auth adapter takes precedence over the generated
+app's default adapter. The SDK does not couple either path to Backstage or to
+a particular provider.
+
+## Generated application authentication
+
+The generated skeleton creates `createOidcAuthAdapter()` when both
+`VITE_AUTH_ISSUER_URL` and `VITE_AUTH_CLIENT_ID` are present. It is a public
+OIDC browser-client flow using Authorization Code + PKCE; no client secret is
+accepted or generated. Optional values configure the registered callback,
+post-logout callback, scope, and provider-specific audience. The issuer's
+discovery document, authorization endpoint, token endpoint, redirect URIs, and
+browser CORS policy must be configured by the application deployment.
+
+The adapter keeps access, refresh, and identity tokens in memory. It keeps only
+the short-lived state/nonce/PKCE transaction in `sessionStorage`, restores a
+browser SSO session with an OIDC `prompt=none` round trip, refreshes an expired
+access token when a refresh token is available, and clears local state on
+expiry, sign-out, or a backend `401`. API calls use the adapter's optional
+`getAccessToken()` through `src/api/client.ts` and send a bearer token; the API
+must validate that token and enforce authorization. Decoded ID-token claims are
+used only for display identity; they are not an authorization decision.
+
+With no OIDC configuration, the generated app deliberately reports auth as
+unavailable. A host adapter can provide the same stable contract in hosted
+mode, including a different session transport, without changing Feature Pack
+code.
 
 ## Runtime modes
 
@@ -70,7 +96,7 @@ the current implementation. Put those domain calls in `src/api/` and keep
 their real authority in the product backend. See
 [Backend integration boundaries](backend-integration.md).
 
-The generated skeleton demonstrates all six hooks on its home route
+The generated skeleton demonstrates the platform hooks on its home route
 (`src/routes/index.tsx`, `PlatformCapabilities` component).
 
 ## Unavailable-capability contract

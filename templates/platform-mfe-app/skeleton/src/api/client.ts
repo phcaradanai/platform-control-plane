@@ -1,4 +1,8 @@
 import { env } from '../lib/env';
+import {
+  getPlatformAccessToken,
+  handlePlatformUnauthorized,
+} from '../lib/platform-auth';
 
 /** Stable error shape for every failed request. */
 export class ApiError extends Error {
@@ -71,17 +75,30 @@ export async function request<T>(
   }
 
   try {
+    const accessToken = await getPlatformAccessToken();
+    if (externalSignal?.aborted || controller.signal.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
+    const requestHeaders = new Headers(headers);
+    if (!requestHeaders.has('Accept')) {
+      requestHeaders.set('Accept', 'application/json');
+    }
+    if (!requestHeaders.has('Content-Type')) {
+      requestHeaders.set('Content-Type', 'application/json');
+    }
+    if (accessToken && !requestHeaders.has('Authorization')) {
+      requestHeaders.set('Authorization', `Bearer ${accessToken}`);
+    }
     const response = await fetch(`${env.VITE_API_BASE_URL}${path}`, {
       ...rest,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...headers,
-      },
+      headers: requestHeaders,
       signal: controller.signal,
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        handlePlatformUnauthorized();
+      }
       throw new ApiError(
         await parseErrorBody(response),
         response.status,

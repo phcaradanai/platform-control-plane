@@ -64,8 +64,9 @@ field. The eight frontend Feature Packs are composed into generated routes,
 navigation, screens, interactions, and tests; the platform capabilities
 `notifications`, `i18n`, and `observability` are composed into their
 extension points. `tenant`, `desktop-ready`, and `mobile-ready` are recorded
-only in `platform-app.json`; `theme` is an always-on foundation rather than a
-meaningful toggle. See [capabilities.md](./capabilities.md) and
+only in `platform-app.json`; `theme` is an always-on foundation. The form may
+record a `theme` request, but selecting it does not enable or disable theme
+support. See [capabilities.md](./capabilities.md) and
 [feature-packs.md](./feature-packs.md).
 
 ## Runtime mode
@@ -143,14 +144,15 @@ README.md
 package.json + package-lock.json
 index.html
 src/
-├── main.tsx + app.tsx + router.tsx + routeTree.gen.ts
+├── main.tsx + app.tsx + router.tsx + routeTree.gen.ts  # boot/provider/router
 ├── routes/                 # root, foundation examples, selected pack routes
 ├── feature-packs/          # contract, registry, selected pack modules
 ├── capabilities/           # selected notifications/i18n/observability modules
-├── api/                    # typed client, health example, API types
-├── components/             # layout and feedback components
+├── api/                    # typed client, bearer boundary, health/types
+├── components/             # layout shell and runtime feedback components
 ├── features/               # foundation form/table/health examples
-├── lib/ + platform-ui/ + test/
+├── lib/                    # env, auth, runtime, navigation, app metadata
+├── platform-ui/ + test/    # vendored UI contract checks and test setup
 e2e/                        # Playwright smoke and composition tests
 vendor/                     # platform-sdk and platform-ui tarballs
 playwright.config.ts
@@ -187,8 +189,8 @@ capabilities `notifications`, `i18n`, and `observability` are composed into
 Packs are composed into `src/feature-packs/` (see
 [capabilities.md](./capabilities.md) and [feature-packs.md](./feature-packs.md));
 `tenant`, `desktop-ready`, and `mobile-ready` remain recorded only.
-`theme` is an always-on foundation. The generated README explicitly lists what was
-generated, which requested identifiers are composed, always-on, or recorded
+`theme` is an always-on foundation. The generated README explicitly lists what
+was generated, which requested identifiers are composed, always-on, or recorded
 only, how to run validation
 (`npm ci && npm run typecheck && npm run build`), and that Module
 Federation integration is a later phase.
@@ -213,10 +215,16 @@ The repository contains:
 - `catalog-info.yaml` linking the application to the `application-platform`
   system;
 - `.github/workflows/ci.yml` and a README with the generated commands;
-- `.env.example` with `VITE_API_BASE_URL` and `VITE_APP_TITLE`.
+- `.env.example` with API settings and optional public OIDC settings; it never
+  contains a client secret.
 
 The generated app has no backend. Its `/health` example demonstrates the API
-boundary and fails gracefully when no service is running.
+boundary and fails gracefully when no service is running. When the optional
+OIDC issuer and public client ID are configured, `src/lib/platform-auth.ts`
+creates the SDK's Authorization Code + PKCE adapter; `src/api/client.ts`
+obtains its bearer token through that boundary. Host-provided auth adapters can
+override it at runtime, and backend token validation/authorization remain
+outside the generated frontend.
 
 ## Generated CI expectations
 
@@ -251,7 +259,10 @@ npm run test:e2e
 ```
 
 Use `standalone` or `standalone-and-mfe` while developing locally unless a
-compatible host is already available. Then read
+compatible host is already available. To exercise generated authentication,
+set both public OIDC variables in `.env.local` and register the app callback
+with the provider; do not put a client secret in Vite environment variables.
+Then read
 [Business-domain development](business-domain-development.md) for the product
 ownership boundary and [Backend integration boundaries](backend-integration.md)
 for real providers and APIs.
@@ -259,5 +270,8 @@ for real providers and APIs.
 ## What is composed versus recorded
 
 The generated README lists the selected values. The exact rules and current
-status are maintained in [capabilities.md](capabilities.md); do not infer
-that a recorded selection creates a page, endpoint, provider, or backend.
+status are maintained in [capabilities.md](capabilities.md): the eight
+frontend Feature Packs and three infrastructure capabilities compose code,
+`theme` is always-on, and only `tenant`, `desktop-ready`, and `mobile-ready`
+are recorded-only. Do not infer that a recorded selection creates a page,
+endpoint, provider, or backend.

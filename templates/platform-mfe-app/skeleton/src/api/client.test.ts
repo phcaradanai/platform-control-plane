@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createStandaloneAuthAdapter } from '@platform/sdk';
+import { configurePlatformAuth } from '../lib/platform-auth';
 import { api, request } from './client';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -13,10 +15,12 @@ describe('api client', () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
+    fetchMock.mockClear();
     vi.stubGlobal('fetch', fetchMock);
   });
 
   afterEach(() => {
+    configurePlatformAuth(createStandaloneAuthAdapter());
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -78,5 +82,64 @@ describe('api client', () => {
       name: 'ApiError',
       code: 'NETWORK',
     });
+  });
+
+  it('attaches a current bearer token from the platform auth boundary', async () => {
+    configurePlatformAuth({
+      getSnapshot: () => ({
+        isAuthenticated: true,
+        user: { id: 'user-1' },
+      }),
+      subscribe: () => () => {},
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      getAccessToken: vi.fn().mockResolvedValue('access-token-1'),
+    });
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'ok' }));
+
+    await api.get('/protected');
+
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(new Headers(init.headers).get('Authorization')).toBe(
+      'Bearer access-token-1',
+    );
+  });
+
+  it('does not add an authorization header when no token is available', async () => {
+    configurePlatformAuth({
+      getSnapshot: () => ({
+        isAuthenticated: false,
+        user: null,
+      }),
+      subscribe: () => () => {},
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      getAccessToken: vi.fn().mockResolvedValue(null),
+    });
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'ok' }));
+
+    await api.get('/public');
+
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(new Headers(init.headers).has('Authorization')).toBe(false);
+  });
+
+  it('notifies the auth boundary when the backend rejects the credential', async () => {
+    const handleUnauthorized = vi.fn();
+    configurePlatformAuth({
+      getSnapshot: () => ({ isAuthenticated: true, user: { id: 'user-1' } }),
+      subscribe: () => () => {},
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      getAccessToken: vi.fn().mockResolvedValue('access-token-1'),
+      handleUnauthorized,
+    });
+    fetchMock.mockResolvedValue(jsonResponse({ message: 'expired' }, 401));
+
+    await expect(api.get('/protected')).rejects.toMatchObject({
+      status: 401,
+      code: 'HTTP_ERROR',
+    });
+    expect(handleUnauthorized).toHaveBeenCalledOnce();
   });
 });

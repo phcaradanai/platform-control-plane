@@ -129,8 +129,9 @@ Selections have three different effects:
   screens, interactions, and focused tests. Their typed frontend/data
   boundaries still need real providers or product services.
 - `tenant`, `desktop-ready`, and `mobile-ready` are recorded only in
-  `platform-app.json`; `theme` is an always-on `@platform/ui` foundation and
-  is not a meaningful toggle.
+  `platform-app.json`; `theme` is an always-on `@platform/ui` foundation. The
+  App Factory may record a `theme` request, but selecting it does not control
+  whether theme support exists.
 
 Feature Pack dependencies are validated before publication: Profile and RBAC
 require Authentication, and Audit Log requires both Authentication and RBAC.
@@ -160,6 +161,22 @@ Copy `.env.example` to `.env.local` and set `VITE_API_BASE_URL` to a reachable
 backend. The generated `/health` call is an illustrative API boundary; this
 repository does not generate a domain backend. Check the backend's CORS policy,
 the browser Network tab, and the normalized `ApiError` details.
+
+### Generated authentication stays unavailable or does not restore
+
+Set both `VITE_AUTH_ISSUER_URL` and `VITE_AUTH_CLIENT_ID` in the generated
+app's `.env.local`. The browser flow uses Authorization Code + PKCE and never
+accepts a client secret. Register the exact callback (by default
+`/authentication`) and post-logout callback with the OIDC provider, enable
+discovery/token endpoint access and browser CORS for the app origin, and set
+`VITE_AUTH_AUDIENCE` only when the provider requires an API audience.
+
+With no OIDC configuration, auth is intentionally unavailable unless a hosted
+runtime supplies an `AuthAdapter`. On reload, the generated adapter restores
+the provider's existing browser SSO session with `prompt=none`; it keeps tokens
+in memory, refreshes when possible, and reports the session expired after a
+failed refresh or backend `401`. The API/backend must validate the bearer token;
+the generated UI is not an authorization authority.
 
 ### Generated CI fails before the build
 

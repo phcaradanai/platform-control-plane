@@ -8,6 +8,7 @@ import { ThemeProvider } from '@platform/ui';
 import { ToastProvider } from '@platform/ui';
 import { appInfo } from './lib/app-info';
 import { createRouterNavigationAdapter } from './lib/platform-navigation-adapter';
+import { appAuthAdapter } from './lib/platform-auth';
 import type { ResolvedPlatformRuntime } from './lib/platform-runtime';
 import { router } from './router';
 {% if 'i18n' in values.capabilities %}
@@ -36,7 +37,13 @@ export function App({ runtime }: { runtime: ResolvedPlatformRuntime }) {
         runtimeMode: runtime.runtimeMode,
         // Local router bridge is the default; a host that supplies its own
         // navigation adapter overrides it.
-        adapters: { navigation: navigationAdapter, ...runtime.adapters },
+        // A host auth adapter overrides the generated OIDC adapter when one is
+        // supplied; otherwise standalone apps use the configured provider.
+        adapters: {
+          auth: appAuthAdapter,
+          navigation: navigationAdapter,
+          ...runtime.adapters,
+        },
       }}
     >
       {% if 'i18n' in values.capabilities %}<I18nProvider>{% endif %}

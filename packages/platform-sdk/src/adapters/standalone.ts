@@ -17,17 +17,19 @@ const AUTH_UNAVAILABLE =
  * Navigation has no such backend dependency, so it works standalone via the
  * browser's own History API.
  */
-export function createStandaloneAuthAdapter(): AuthAdapter {
+export function createStandaloneAuthAdapter(
+  reason = AUTH_UNAVAILABLE,
+): AuthAdapter {
   return {
     getSnapshot: () => null,
     subscribe: () => () => {},
     signIn: () =>
       Promise.reject(
-        new PlatformCapabilityUnavailableError('auth', AUTH_UNAVAILABLE),
+        new PlatformCapabilityUnavailableError('auth', reason),
       ),
     signOut: () =>
       Promise.reject(
-        new PlatformCapabilityUnavailableError('auth', AUTH_UNAVAILABLE),
+        new PlatformCapabilityUnavailableError('auth', reason),
       ),
   };
 }

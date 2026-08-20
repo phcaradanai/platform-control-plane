@@ -67,8 +67,10 @@ the Platform Control Plane.
 - **Identity and access UX** — when selected, Authentication, Profile, and
   Permissions packs compose provider-neutral sign-in, current-user, route
   guard, denied, and permission-aware action states through `@platform/sdk`.
-  They fail clearly when no real adapter is configured; they do not provide
-  backend security.
+  With public OIDC configuration, the generated app supplies a real
+  Authorization Code + PKCE adapter; a compatible host adapter may override it.
+  They fail clearly when neither is configured and do not provide backend
+  security.
 - **Operational data UX** — when selected, Reports, History, and Audit Log add
   real catalog/table/filter/detail flows using typed, replaceable data-source
   contracts. Illustrative local sources make the generated UX usable without
@@ -98,6 +100,19 @@ Copy `.env.example` to `.env.local`:
 
 - `VITE_API_BASE_URL` defaults to `http://localhost:8080/api`;
 - `VITE_APP_TITLE` optionally overrides the display title.
+- `VITE_AUTH_ISSUER_URL` and `VITE_AUTH_CLIENT_ID` enable the generated
+  provider-neutral OIDC browser client;
+- `VITE_AUTH_REDIRECT_URI`, `VITE_AUTH_POST_LOGOUT_REDIRECT_URI`,
+  `VITE_AUTH_SCOPE`, and `VITE_AUTH_AUDIENCE` are optional public OIDC values.
+
+The auth configuration accepts no client secret. The SDK uses Authorization
+Code + PKCE, keeps access/refresh/identity tokens in memory, stores only the
+short-lived PKCE transaction in `sessionStorage`, restores an existing OIDC
+browser session with `prompt=none`, refreshes when possible, and clears local
+state on expiry, sign-out, or a backend `401`. The active access token is
+attached to API requests by `src/api/client.ts`; the API/backend must validate
+it and enforce authorization. Backstage operator sign-in is separate and is
+not reused as generated-app end-user authentication.
 
 The `/health` request is an illustrative endpoint. This repository generates
 no backend. Add product endpoints under `src/api/` and route every request
@@ -164,15 +179,16 @@ feedback behavior, and SDK contract.
 
 Do not treat frontend code as the authority for authentication security,
 authorization enforcement, persistence, audit integrity, tenant isolation, or
-compliance. Supply real API/provider implementations behind the documented
-contracts. In standalone mode, SDK auth and permissions are unavailable and
+compliance. Supply the deployment OIDC configuration or a host adapter, and
+enforce token validity and authorization in the real API/backend. Without
+either OIDC configuration or a host adapter, SDK auth is unavailable and
 permission checks fail closed.
 
 - `platform-app.json` `runtime.status` is `not-configured` — no Module
   Federation host or remote wiring exists yet.
-- Requested identifiers outside the composed infrastructure capabilities and
-  frontend Feature Packs are recorded only; nothing beyond
-  `platform-app.json` reflects them yet.
+- `tenant`, `desktop-ready`, and `mobile-ready` are recorded-only identifiers;
+  `theme` is always-on and is never classified as recorded-only. Selecting
+  `theme` only records the request and does not control theme availability.
 - The health endpoint (`/health` under `VITE_API_BASE_URL`) is an example
   of the API boundary, not a real backend — no server is generated.
 - There is no deployment configuration.
@@ -190,7 +206,7 @@ src/
     feedback/     runtime-specific fallback UI
   platform-ui/    integration tests for the shared `@platform/ui` contract
   features/       feature modules (health and developer verification examples)
-  lib/            env validation, app-info, runtime and navigation adapters
+  lib/            env, auth, app metadata, runtime and navigation adapters
   routes/         TanStack Router file-based routes
   test/           Vitest setup
 e2e/              Playwright smoke specs
@@ -198,9 +214,9 @@ e2e/              Playwright smoke specs
 
 ## What comes later
 
-Runtime Module Federation loading, the Super App shell, provider-backed
-authentication/RBAC enforcement, and deployment are out of scope for this
-generated foundation and are planned for a later App Factory phase. See
-docs/feature-packs.md and docs/capabilities.md in
-`platform-control-plane` for which selections are composed today versus
-still only recorded.
+Runtime Module Federation loading, the Super App shell, backend authorization,
+tenant services, and deployment are out of scope for this generated foundation
+and are planned for later phases. The app already has a provider-neutral OIDC
+authentication adapter when configured. See docs/feature-packs.md and
+docs/capabilities.md in `platform-control-plane` for which selections are
+composed today versus always-on or recorded-only.
