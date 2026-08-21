@@ -11,7 +11,7 @@ and any particular identity provider.
 | App identity   | `usePlatformApp()`     | Always available from `platform-app.json`                  |
 | Runtime        | `usePlatformRuntime()` | Always available after boot resolution                     |
 | Navigation     | `useNavigation()`      | Browser History API fallback; apps may bridge their router |
-| Authentication | `useAuth()`            | `status: unavailable` until an auth adapter is supplied    |
+| Authentication | `useAuth()`            | `status: unavailable` until OIDC configuration or a host adapter is supplied |
 | Permissions    | `usePermissions()`     | `status: unavailable`; `can()` always returns `false`      |
 | Tenant         | `useTenant()`          | `status: unavailable` until a tenant adapter is supplied   |
 
@@ -19,13 +19,13 @@ Unavailable auth actions reject with `PlatformCapabilityUnavailableError`.
 The SDK does not invent a fake user, grant, or tenant.
 
 Identity, runtime information, and navigation are core infrastructure with no
-external dependency, so they always work standalone. The SDK defines auth,
-permissions, and tenant adapter contracts but does not implement their real
-providers; it behaves predictably when no provider is wired up. The
-Authentication, Profile, and Permission/RBAC Feature Packs consume these
-contracts without providing an identity provider or security authority. The
-other Feature Packs likewise keep their production data and service authority
-outside the SDK.
+external dependency, so they always work standalone. The SDK defines
+provider-neutral auth, permissions, and tenant contracts and ships a browser
+OIDC adapter for generated applications; it still behaves predictably when no
+provider is wired up. The Authentication, Profile, and Permission/RBAC
+Feature Packs consume these contracts without moving security authority into
+the frontend. The other Feature Packs likewise keep their production data and
+service authority outside the SDK.
 
 ## Provider usage
 
@@ -44,10 +44,48 @@ The generated app mounts the provider once near the root:
 ```
 
 Each optional capability is supplied through an adapter with a snapshot,
-subscription, and (for auth) sign-in/sign-out methods. A host can publish a
-versioned `window.__PLATFORM_HOST__` object with partial adapters. The SDK
-contains this contract and test helpers; the repository does not include a
-production host or identity provider.
+subscription, and (for auth) sign-in/sign-out methods. Auth adapters may also
+provide a current bearer token and mark a session expired after a backend
+`401`. A host can publish a versioned `window.__PLATFORM_HOST__` object with
+partial adapters. During generated-app boot, runtime resolution selects a host
+auth adapter before constructing the local OIDC adapter; the host adapter
+therefore takes precedence and local OIDC restore/login does not start in a
+hosted application. The SDK does not couple either path to Backstage or to a
+particular provider.
+
+## Generated application authentication
+
+The generated skeleton creates `createOidcAuthAdapter()` when both
+`VITE_AUTH_ISSUER_URL` and `VITE_AUTH_CLIENT_ID` are present. It is a public
+OIDC browser-client flow using Authorization Code + PKCE; no client secret is
+accepted or generated. Optional values configure the registered callback,
+post-logout callback, scope, and provider-specific audience. The issuer's
+discovery document must publish matching issuer, authorization, token, and
+JWKS endpoints. Redirect URIs must be registered for the app origin, and the
+provider must allow the browser's CORS requests.
+
+The adapter keeps access, refresh, and identity tokens in memory. It keeps only
+the short-lived state/nonce/PKCE transaction in `sessionStorage`, and restores
+the current route's pathname, query, and hash through an OIDC `prompt=none`
+round trip. The callback validates the transaction state and age, and return
+paths are reduced to safe same-origin paths. An ID token is
+verified against the discovery JWKS with an allowed signing algorithm and
+issuer, client/audience, `azp` when required, nonce, and time-claim checks;
+decoding a JWT payload alone is never treated as proof of identity. The
+adapter refreshes an expired access token when possible and clears local state
+on expiry, sign-out, or a backend `401`.
+
+Identity-provider operations have a bounded timeout (10 seconds by default) and
+accept cancellation. The generated API client applies its own timeout across
+token acquisition and the API request, forwards caller cancellation, and
+normalizes failures. API calls send a bearer token through the adapter; the
+backend must validate that token and enforce authorization.
+
+With no OIDC configuration, the generated app deliberately reports auth as
+unavailable. In hosted mode, a supplied host adapter is selected before local
+OIDC construction and may use a different session transport without changing
+Feature Pack code. A failed silent restore settles into a signed-out/error
+state with an explicit interactive retry and does not create a redirect loop.
 
 ## Runtime modes
 
@@ -70,7 +108,7 @@ the current implementation. Put those domain calls in `src/api/` and keep
 their real authority in the product backend. See
 [Backend integration boundaries](backend-integration.md).
 
-The generated skeleton demonstrates all six hooks on its home route
+The generated skeleton demonstrates the platform hooks on its home route
 (`src/routes/index.tsx`, `PlatformCapabilities` component).
 
 ## Unavailable-capability contract
@@ -96,8 +134,9 @@ its own null-checking convention.
 
 When auth is ready, `useAuth()` also exposes `phase: 'idle' | 'pending' |
 'error'`, an optional provider error, and `signIn({ returnPath })`. The return
-path is a path-only UX hint for the provider; feature packs sanitize it to a
-same-origin path and the provider/backend remains responsible for the real
+path is a path-only UX hint for the provider; feature packs preserve the
+current nested pathname/query/hash where possible and sanitize it to a
+same-origin path. The provider/backend remains responsible for the real
 redirect.
 
 ## Standalone vs. hosted

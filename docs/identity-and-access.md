@@ -53,7 +53,15 @@ Guest fixture in `examples/org.yaml`.
 
 ## Generated applications
 
-Backstage sign-in does not flow automatically into a generated app. A product
-must supply a real auth adapter/host and enforce authorization in its backend.
-Until then, the generated SDK reports auth and permissions as unavailable and
-fails permission checks closed. See [Backend integration boundaries](backend-integration.md).
+Backstage sign-in does not flow automatically into a generated app. A
+generated app can use its public OIDC configuration through the SDK's
+Authorization Code + PKCE adapter, or receive an equivalent host adapter in
+hosted mode. The generated runtime selects a host adapter before constructing
+local OIDC, so hosted applications do not begin a local restore/login flow.
+The public browser client accepts no client secret, keeps tokens in memory,
+restores and refreshes sessions through bounded provider calls, and validates
+ID tokens with the provider's discovery JWKS. It must still use an
+application/backend API that validates the bearer token and enforces
+authorization. With neither OIDC configuration nor a host adapter, the
+generated SDK reports auth as unavailable and permissions fail closed. See
+[Backend integration boundaries](backend-integration.md).

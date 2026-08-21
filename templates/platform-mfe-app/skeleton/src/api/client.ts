@@ -1,4 +1,8 @@
 import { env } from '../lib/env';
+import {
+  getPlatformAccessToken,
+  handlePlatformUnauthorized,
+} from '../lib/platform-auth';
 
 /** Stable error shape for every failed request. */
 export class ApiError extends Error {
@@ -31,13 +35,69 @@ function toApiError(error: unknown): ApiError {
   return new ApiError(error instanceof Error ? error.message : 'Unknown error');
 }
 
-async function parseErrorBody(response: Response): Promise<string> {
+async function parseErrorBody(
+  response: Response,
+  signal: AbortSignal,
+): Promise<string> {
   try {
-    const body = (await response.json()) as { message?: string };
-    return body.message ?? `${response.status} ${response.statusText}`;
-  } catch {
+    const body = (await awaitWithAbort(response.json(), signal)) as {
+      message?: unknown;
+    } | null;
+    if (body && typeof body.message === 'string' && body.message.length > 0) {
+      return body.message;
+    }
+    return `${response.status} ${response.statusText}`;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error;
+    }
     return `${response.status} ${response.statusText}`;
   }
+}
+
+/**
+ * Wait for an operation while preserving the caller's cancellation boundary.
+ * The underlying promise is still observed after an abort, preventing a late
+ * provider rejection from becoming an unhandled rejection.
+ */
+function awaitWithAbort<T>(
+  promise: Promise<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  if (signal.aborted) {
+    return Promise.reject(
+      new DOMException('The operation was aborted.', 'AbortError'),
+    );
+  }
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      signal.removeEventListener('abort', onAbort);
+    };
+    const resolveOnce = (value: T) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolve(value);
+    };
+    const rejectOnce = (error: unknown) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+    const onAbort = () => {
+      rejectOnce(
+        new DOMException('The operation was aborted.', 'AbortError'),
+      );
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    void promise.then(resolveOnce, rejectOnce);
+  });
 }
 
 /**
@@ -71,19 +131,40 @@ export async function request<T>(
   }
 
   try {
-    const response = await fetch(`${env.VITE_API_BASE_URL}${path}`, {
-      ...rest,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-      signal: controller.signal,
-    });
+    if (controller.signal.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
+    const accessToken = await awaitWithAbort(
+      Promise.resolve().then(() =>
+        getPlatformAccessToken({ signal: controller.signal }),
+      ),
+      controller.signal,
+    );
+    const requestHeaders = new Headers(headers);
+    if (!requestHeaders.has('Accept')) {
+      requestHeaders.set('Accept', 'application/json');
+    }
+    if (!requestHeaders.has('Content-Type')) {
+      requestHeaders.set('Content-Type', 'application/json');
+    }
+    if (accessToken && !requestHeaders.has('Authorization')) {
+      requestHeaders.set('Authorization', `Bearer ${accessToken}`);
+    }
+    const response = await awaitWithAbort(
+      fetch(`${env.VITE_API_BASE_URL}${path}`, {
+        ...rest,
+        headers: requestHeaders,
+        signal: controller.signal,
+      }),
+      controller.signal,
+    );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        handlePlatformUnauthorized();
+      }
       throw new ApiError(
-        await parseErrorBody(response),
+        await parseErrorBody(response, controller.signal),
         response.status,
         'HTTP_ERROR',
       );
@@ -93,7 +174,7 @@ export async function request<T>(
       return undefined as T;
     }
 
-    return (await response.json()) as T;
+    return (await awaitWithAbort(response.json(), controller.signal)) as T;
   } catch (error) {
     if (externalSignal?.aborted) {
       // Genuine cancellation by the caller - rethrow so TanStack Query

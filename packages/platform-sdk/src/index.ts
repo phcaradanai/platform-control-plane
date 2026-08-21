@@ -26,11 +26,19 @@ export type {
 
 export type {
   AuthAdapter,
+  AuthAccessTokenOptions,
   PermissionsAdapter,
   TenantAdapter,
   NavigationAdapter,
   PlatformAdapters,
 } from './adapters/types.js';
+
+export { createOidcAuthAdapter } from './adapters/oidc.js';
+export type {
+  OidcAuthConfig,
+  OidcLocation,
+  StorageLike,
+} from './adapters/oidc.js';
 
 export {
   createStandaloneAuthAdapter,

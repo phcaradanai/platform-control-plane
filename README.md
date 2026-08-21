@@ -111,10 +111,11 @@ generated capability:
 provider, authorization service, tenant service, persistence layer, audit
 authority, or business backend.
 
-Real identity-provider integration for generated applications, tenant
-infrastructure, report/history/audit data services and persistence, a host
-runtime or Module Federation, and deployment infrastructure remain outside the
-current supported standard. See [Current platform status](docs/status.md)
+Generated applications can integrate with a deployment-provided OIDC issuer
+through the public-client adapter, but platform-owned identity-provider
+operation, tenant infrastructure, report/history/audit data services and
+persistence, a host runtime or Module Federation, and deployment infrastructure
+remain outside the current supported standard. See [Current platform status](docs/status.md)
 before treating a selection or contract as shipped production authority.
 
 ## Repository documentation

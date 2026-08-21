@@ -27,7 +27,7 @@ The current SDK adapters are:
 
 | UX concern      | Frontend contract                        | Real authority                            | Current repository behavior                                     |
 | --------------- | ---------------------------------------- | ----------------------------------------- | --------------------------------------------------------------- |
-| Authentication  | `AuthAdapter`, `useAuth()`               | Identity provider/session service         | No generated-app provider; standalone is `unavailable`          |
+| Authentication  | `AuthAdapter`, `useAuth()`               | Identity provider/session service         | Generated OIDC/PKCE adapter when configured; host adapters may override; standalone without OIDC configuration is `unavailable` |
 | Permission/RBAC | `PermissionsAdapter`, `usePermissions()` | Authorization service/backend enforcement | No generated-app provider; standalone `can()` fails closed      |
 | Tenant          | `TenantAdapter`, `useTenant()`           | Tenant directory/service                  | No provider; standalone is `unavailable`                        |
 | Navigation      | `NavigationAdapter`, `useNavigation()`   | Application router or host                | Browser History fallback; generated app bridges TanStack Router |
@@ -36,14 +36,24 @@ The optional host contract is published at `window.__PLATFORM_HOST__` with
 `contractVersion: 1`. The repository contains the resolver and test helpers,
 but no production host runtime.
 
+For generated authentication, runtime boot chooses a supplied host
+`AuthAdapter` before constructing the local OIDC fallback. A standalone app
+with public OIDC settings uses the provider-neutral Authorization Code + PKCE
+adapter; with neither source, auth is unavailable. The local adapter keeps
+browser tokens in memory, validates ID tokens against discovery JWKS, and
+preserves only its short-lived transaction in `sessionStorage`.
+
 ## Domain API integration
 
 The generated app's `src/api/client.ts` is transport, not a backend. It uses
 `VITE_API_BASE_URL` (default `http://localhost:8080/api`), applies JSON headers,
-timeouts, cancellation, and a normalized `ApiError`. Add domain endpoints in
-`src/api/` and call them through that client. Implement the real service,
-authentication, authorization, persistence, and error semantics on the backend
-side.
+bounded timeouts and cancellation across token acquisition and the request, a
+bearer token from the active auth adapter when one is available, and a
+normalized `ApiError`. A `401` notifies the auth adapter so the generated
+session can expire locally; a backend still decides whether the credential is
+valid. Add domain endpoints in `src/api/` and call them through that client.
+Implement the real service, authentication, authorization, persistence, and
+error semantics on the backend side.
 
 There is no generated backend. The Reports, History, and Audit Log Feature
 Packs do provide typed frontend data-source interfaces, but those interfaces
@@ -68,9 +78,13 @@ boundaries. They do not themselves provide the production provider, backend,
 persistence, security authority, or compliance guarantee behind those
 boundaries:
 
-- **Authentication** → `/authentication` session UX and SDK auth adapter → a
-  real identity provider. Standalone remains `unavailable`; no generated-app
-  provider is configured by default.
+- **Authentication** → `/authentication` session UX and SDK auth adapter →
+  a configured OIDC provider or compatible host. Generated apps include a
+  provider-neutral Authorization Code + PKCE adapter when public OIDC
+  configuration is present; it validates the signed ID token against discovery
+  JWKS and never accepts a browser client secret. Standalone without
+  configuration remains `unavailable`. API validation, authentication
+  authority, and authorization enforcement remain backend responsibilities.
 - **Profile** → `/profile` current-user UX → `PlatformUser` plus any
   product-owned profile API. It requires Authentication; profile persistence
   remains external.

@@ -41,9 +41,11 @@ Guest, while production configuration uses GitHub OAuth and catalog-backed
 users. That identity controls who may browse Catalog and run App Factory.
 
 The generated application has a separate application-user contract exposed by
-`@platform/sdk`. The default standalone adapters report authentication,
-permissions, and tenant context as unavailable. Do not assume that signing in
-to Backstage authenticates an end user of a generated application.
+`@platform/sdk`. It can use a deployment-provided OIDC issuer through the
+generated public-client adapter, or a compatible hosted auth adapter; the
+default standalone adapters still report authentication, permissions, and
+tenant context as unavailable. Do not assume that signing in to Backstage
+authenticates an end user of a generated application.
 
 ## What not to infer
 
