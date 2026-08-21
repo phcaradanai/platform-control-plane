@@ -10,16 +10,27 @@ Frontend ของทีม โดยช่วยให้ทีมสร้า�
 
 ส่วนประกอบหลักมีดังนี้:
 
-| ส่วนประกอบ | หน้าที่ |
-| --- | --- |
-| @platform/ui | Design tokens, accessible UI primitives, feedback states และ Design System Portal |
-| @platform/sdk | สัญญากลางของ app identity, runtime, navigation, authentication, permissions และ tenant |
-| Backstage control plane | Catalog, การเข้าสู่ระบบของผู้ดูแล และหน้า App Factory |
-| Generated application | Repository ของ product ที่ทีมจะนำไปพัฒนา business domain ต่อ |
+| ส่วนประกอบ              | หน้าที่                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| @platform/ui            | Design tokens, accessible UI primitives, feedback states และ Design System Portal      |
+| @platform/sdk           | สัญญากลางของ app identity, runtime, navigation, authentication, permissions และ tenant |
+| Backstage control plane | Catalog, การเข้าสู่ระบบของผู้ดูแล และหน้า App Factory                                  |
+| Generated application   | Repository ของ product ที่ทีมจะนำไปพัฒนา business domain ต่อ                           |
 
 Control plane นี้ไม่ใช่ runtime ของ product application และไม่ได้สร้าง backend
 ของ product ให้โดยอัตโนมัติ แอปที่สร้างขึ้นจะเป็นเจ้าของ domain, API, workflow
 และกฎธุรกิจของตัวเอง ส่วน platform จะดูแล shared foundation และ contract กลาง
+
+มาตรฐาน UX/UI ในที่นี้หมายถึง shell, semantic theme/token, accessible
+primitives, feedback states และพฤติกรรมทั่วไปของ Feature Pack ที่ใช้ร่วมกันได้
+ไม่ใช่การบังคับ information architecture, copy, workflow หรือ visual brand ของ
+ทุก product — domain-specific UX ยังปรับต่างกันได้ภายใต้ foundation เดียวกัน
+
+ภาพจาก local runtime จริงของ repository แสดงให้เห็น shared visual language:
+
+![Design System Portal แสดง shared application shell และ reusable UX patterns](docs/images/readme/design-system-portal-shell.png)
+
+_Design System Portal: catalog ของ application shell, navigation และ reusable UX patterns ที่มาจาก `@platform/ui` จริง_
 
 ### เริ่มใช้งานอย่างเร็ว
 
@@ -34,11 +45,11 @@ Control plane นี้ไม่ใช่ runtime ของ product application 
 
 #### ติดตั้ง
 
-~~~bash
+```bash
 git clone https://github.com/phcaradanai/platform-control-plane.git
 cd platform-control-plane
 node .yarn/releases/yarn-4.13.0.cjs install --immutable
-~~~
+```
 
 Repository นี้ vendored Yarn 4.13.0 ไว้แล้ว จึงไม่ต้องติดตั้ง global Yarn
 หรือพึ่ง Corepack เพื่อให้ได้เวอร์ชันที่ตรงกัน
@@ -50,25 +61,25 @@ macOS, Linux และ WSL เช่นกัน
 
 Terminal 1 — backend:
 
-~~~bash
+```bash
 # ถ้าจะใช้ App Factory ให้ใส่ token จริง
-# ถ้าแค่เปิดดู Catalog/หน้าเว็บ ให้ใช้ค่าว่างได้เมื่อ config ในเครื่องอนุญาต
-export GITHUB_TOKEN='<github-token-or-empty>'
+# ถ้าแค่เปิดดู Catalog/หน้าเว็บ ใช้ค่า placeholder ที่ไม่ใช่ secret ได้
+export GITHUB_TOKEN='<github-token-or-local-placeholder>'
 node .yarn/releases/yarn-4.13.0.cjs dev:backend
-~~~
+```
 
 บน PowerShell ใช้:
 
-~~~powershell
-$env:GITHUB_TOKEN = '<github-token-or-empty>'
+```powershell
+$env:GITHUB_TOKEN = '<github-token-or-local-placeholder>'
 node .yarn/releases/yarn-4.13.0.cjs dev:backend
-~~~
+```
 
 Terminal 2 — frontend:
 
-~~~bash
+```bash
 node .yarn/releases/yarn-4.13.0.cjs dev:app
-~~~
+```
 
 เปิดใช้งานที่:
 
@@ -87,9 +98,9 @@ node .yarn/releases/yarn-4.13.0.cjs dev:app
 
 เปิด terminal ที่สามแล้วรัน:
 
-~~~bash
+```bash
 node .yarn/releases/yarn-4.13.0.cjs dev:portal
-~~~
+```
 
 เปิด <http://127.0.0.1:6006> เพื่อดู source-backed component และ UX pattern
 ที่ใช้เป็น review surface ของ @platform/ui
@@ -105,6 +116,13 @@ node .yarn/releases/yarn-4.13.0.cjs dev:portal
    และ capabilities
 5. Submit แล้วติดตาม task output ไปยัง GitHub repository และ Catalog entity
 
+หน้าจอจริงของขั้นตอน **Capabilities** จะแสดงทั้ง Feature Pack ที่สร้าง route
+และ screen ให้ generated app กับ capability ที่เป็นเพียง foundation/metadata:
+
+![Backstage App Factory เลือก Feature Pack และ capability](docs/images/readme/app-factory-feature-packs.png)
+
+_App Factory: ตัวอย่างการเลือก `authentication`, `profile`, `rbac`, `dashboard`, `settings` และ `reports` ก่อน review — ภาพนี้ยังไม่ได้ submit หรือสร้าง repository ใด ๆ_
+
 ก่อน submit ต้องตรวจสอบว่า:
 
 - backend terminal มี GITHUB_TOKEN ที่มีสิทธิ์สร้างและ push repository เป้าหมาย
@@ -115,20 +133,20 @@ node .yarn/releases/yarn-4.13.0.cjs dev:portal
 
 ขั้นตอนภายในใช้ Backstage built-in actions:
 
-~~~text
+```text
 fetch:template -> fs:delete -> publish:github -> catalog:register
-~~~
+```
 
 ผลลัพธ์คือ repository ใหม่ที่มี default branch เป็น main และมี
 catalog-info.yaml สำหรับลงทะเบียนกลับเข้า Backstage
 
 #### Runtime mode ที่ควรรู้ก่อนสร้าง
 
-| Mode | เมื่อไม่มี host | เมื่อมี compatible host |
-| --- | --- | --- |
-| standalone | ทำงานแบบ standalone | ยังคง standalone และ ignore host |
-| platform-mfe | แสดง Platform host required | ทำงานแบบ hosted ผ่าน host adapters |
-| standalone-and-mfe | ทำงานแบบ standalone | ทำงานแบบ hosted เมื่อมี host |
+| Mode               | เมื่อไม่มี host             | เมื่อมี compatible host            |
+| ------------------ | --------------------------- | ---------------------------------- |
+| standalone         | ทำงานแบบ standalone         | ยังคง standalone และ ignore host   |
+| platform-mfe       | แสดง Platform host required | ทำงานแบบ hosted ผ่าน host adapters |
+| standalone-and-mfe | ทำงานแบบ standalone         | ทำงานแบบ hosted เมื่อมี host       |
 
 ค่าเริ่มต้นของ form คือ platform-mfe แต่ repository นี้ยังไม่มี Super App
 หรือ production Module Federation host ดังนั้นถ้าต้องการ clone แล้วรันในเครื่อง
@@ -136,9 +154,9 @@ catalog-info.yaml สำหรับลงทะเบียนกลับเ�
 
 ทุก generated application จะบันทึก:
 
-~~~json
+```json
 "runtime": { "type": "module-federation", "status": "not-configured" }
-~~~
+```
 
 ฟิลด์นี้เป็น metadata ของ boundary ในอนาคต ไม่ได้หมายความว่า Module Federation
 ถูกติดตั้งหรือเชื่อมต่อแล้ว
@@ -147,7 +165,7 @@ catalog-info.yaml สำหรับลงทะเบียนกลับเ�
 
 เข้าไปที่ generated repository แล้วรัน:
 
-~~~bash
+```bash
 npm ci
 npm run dev
 npm run typecheck
@@ -155,7 +173,7 @@ npm run lint
 npm test
 npm run build
 npm run test:e2e
-~~~
+```
 
 Generated application ใช้ npm และมี package-lock.json ติดมาด้วย ควรใช้
 Node.js >=22.12 และรักษา package.json กับ lockfile ให้ตรงกัน
@@ -172,17 +190,24 @@ Node.js >=22.12 และรักษา package.json กับ lockfile ให�
 
 รายละเอียด output ดูได้ที่ [App Factory guide](docs/app-template.md)
 
+ตัวอย่าง generated output ที่เปิดจาก skeleton จริงจะมี shell และ navigation
+มาตรฐานให้เริ่มพัฒนาได้ทันที:
+
+![Generated application shell และ navigation จาก App Factory skeleton](docs/images/readme/generated-app-shell.png)
+
+_Generated app แบบ `standalone`: shell, theme toggle, app identity, capability metadata และ generic API feedback state; ยังไม่มี product backend หรือ host runtime_
+
 ### ตั้งค่า API และ Authentication
 
 ใน generated app ให้ copy .env.example เป็น .env.local:
 
-~~~bash
+```bash
 cp .env.example .env.local
-~~~
+```
 
 ตัวแปรสำคัญ:
 
-~~~dotenv
+```dotenv
 VITE_API_BASE_URL=http://localhost:8080/api
 VITE_AUTH_ISSUER_URL=
 VITE_AUTH_CLIENT_ID=
@@ -190,13 +215,13 @@ VITE_AUTH_REDIRECT_URI=http://localhost:5173/authentication
 VITE_AUTH_POST_LOGOUT_REDIRECT_URI=http://localhost:5173/authentication
 VITE_AUTH_SCOPE=openid profile email
 VITE_AUTH_AUDIENCE=
-~~~
+```
 
 กติกา OIDC ที่สำคัญ:
 
 - ต้องกำหนดทั้ง VITE_AUTH_ISSUER_URL และ VITE_AUTH_CLIENT_ID
 - ใช้ Authorization Code + PKCE สำหรับ public browser client
-- ห้ามใส่ client secret ใน VITE_* หรือในไฟล์ที่ถูกส่งไป browser
+- ห้ามใส่ client secret ใน VITE\_\* หรือในไฟล์ที่ถูกส่งไป browser
 - ลงทะเบียน callback และ post-logout callback กับ provider ให้ตรงกับ
   origin/path ของแอป
 - discovery document ของ issuer ต้องชี้ไปยัง authorization, token และ JWKS
@@ -227,12 +252,12 @@ generated application
 
 ### เลือก Capabilities ให้ถูกความหมาย
 
-| กลุ่ม | รายการ | สิ่งที่เกิดขึ้น |
-| --- | --- | --- |
-| Frontend Feature Packs | authentication, profile, rbac, dashboard, settings, reports, history, audit-log | เพิ่ม route, navigation, screen, interaction และ focused tests ตามที่เลือก |
-| Infrastructure capabilities | notifications, i18n, observability | compose module เข้า extension point ของแอป |
-| Always-on foundation | theme | มีอยู่ในทุก generated app ผ่าน @platform/ui; การเลือก theme แค่บันทึก request |
-| Recorded-only | tenant, desktop-ready, mobile-ready | บันทึกใน platform-app.json แต่ไม่สร้าง page, provider, data source หรือ backend |
+| กลุ่ม                       | รายการ                                                                          | สิ่งที่เกิดขึ้น                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Frontend Feature Packs      | authentication, profile, rbac, dashboard, settings, reports, history, audit-log | เพิ่ม route, navigation, screen, interaction และ focused tests ตามที่เลือก      |
+| Infrastructure capabilities | notifications, i18n, observability                                              | compose module เข้า extension point ของแอป                                      |
+| Always-on foundation        | theme                                                                           | มีอยู่ในทุก generated app ผ่าน @platform/ui; การเลือก theme แค่บันทึก request   |
+| Recorded-only               | tenant, desktop-ready, mobile-ready                                             | บันทึกใน platform-app.json แต่ไม่สร้าง page, provider, data source หรือ backend |
 
 ข้อควรจำ:
 
@@ -245,6 +270,16 @@ generated application
 
 ดูรายละเอียด composition ปัจจุบันที่ [capabilities](docs/capabilities.md) และ
 [feature packs](docs/feature-packs.md)
+
+ตัวอย่างหน้าจอ Feature Pack ที่ generated app ได้จากการเลือก capability:
+
+![Generated Dashboard Feature Pack](docs/images/readme/generated-dashboard.png)
+
+_Dashboard: summary, data-page rhythm, range selector และ sample table เป็น generic behavior ที่ product นำไปต่อกับ domain data ได้_
+
+![Generated Settings Feature Pack](docs/images/readme/generated-settings.png)
+
+_Settings: settings navigation, form sections, switches และ local-save interaction ใช้ foundation เดียวกัน แต่ field และ policy ของ product เปลี่ยนได้_
 
 ### จุดเริ่มต้นของการพัฒนา business domain
 
@@ -287,7 +322,7 @@ recorded-only ต้องถือเป็นข้อจำกัดจริ
 
 คำสั่งตรวจสอบหลักให้รันจาก root:
 
-~~~bash
+```bash
 node .yarn/releases/yarn-4.13.0.cjs lint:all
 node .yarn/releases/yarn-4.13.0.cjs tsc
 node .yarn/releases/yarn-4.13.0.cjs test:all
@@ -295,7 +330,7 @@ node .yarn/releases/yarn-4.13.0.cjs build:all
 node .yarn/releases/yarn-4.13.0.cjs build:portal
 docker compose config --quiet
 node .yarn/releases/yarn-4.13.0.cjs test:e2e:smoke
-~~~
+```
 
 ปัญหาที่พบบ่อย:
 
@@ -340,12 +375,12 @@ frontend standard platform. It gives product teams a repeatable starting point
 for React applications while keeping business-domain ownership in the generated
 application.
 
-| Area | Responsibility |
-| --- | --- |
-| @platform/ui | Semantic theme tokens, accessible UI primitives, feedback states and the Design System Portal |
-| @platform/sdk | Application identity, runtime, navigation, authentication, permissions and tenant contracts |
-| Backstage control plane | Catalog, operator sign-in and the App Factory |
-| Generated application | Product-owned domain code, API integration, workflows and business rules |
+| Area                    | Responsibility                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| @platform/ui            | Semantic theme tokens, accessible UI primitives, feedback states and the Design System Portal |
+| @platform/sdk           | Application identity, runtime, navigation, authentication, permissions and tenant contracts   |
+| Backstage control plane | Catalog, operator sign-in and the App Factory                                                 |
+| Generated application   | Product-owned domain code, API integration, workflows and business rules                      |
 
 The control plane is not the product runtime and does not generate a product
 backend. Generated applications consume the shared foundation and own their
@@ -364,27 +399,31 @@ Prerequisites:
 
 Install the pinned Yarn release:
 
-~~~bash
+```bash
 git clone https://github.com/phcaradanai/platform-control-plane.git
 cd platform-control-plane
 node .yarn/releases/yarn-4.13.0.cjs install --immutable
-~~~
+```
 
 Run the backend and frontend in separate terminals:
 
-~~~bash
+```bash
 # Terminal 1
-export GITHUB_TOKEN='<github-token-or-empty>'
+export GITHUB_TOKEN='<github-token-or-local-placeholder>'
 node .yarn/releases/yarn-4.13.0.cjs dev:backend
 
 # Terminal 2
 node .yarn/releases/yarn-4.13.0.cjs dev:app
-~~~
+```
 
-On PowerShell, use $env:GITHUB_TOKEN = '<github-token-or-empty>' instead of
+On PowerShell, use $env:GITHUB_TOKEN = '<github-token-or-local-placeholder>' instead of
 export. A real token is required for App Factory repository checks and
 publishing. The two-process workflow does not automatically load .env; export
 variables in the process that starts the backend and never commit .env.
+
+If you are only inspecting the local UI, use a non-secret placeholder such as
+`local-only-placeholder`; App Factory validation and publishing still require
+a real token with the necessary GitHub permissions.
 
 Open:
 
@@ -395,9 +434,9 @@ Open:
 Choose **Enter** for local Guest auth, then verify **Catalog** and **Create**.
 For the shared UX review surface, run:
 
-~~~bash
+```bash
 node .yarn/releases/yarn-4.13.0.cjs dev:portal
-~~~
+```
 
 Then open <http://127.0.0.1:6006>.
 
@@ -407,9 +446,9 @@ In Backstage, choose **Create** → **Platform MFE Application**, complete the
 form, submit it, and follow the task output to the GitHub repository and Catalog
 entity. The template uses:
 
-~~~text
+```text
 fetch:template -> fs:delete -> publish:github -> catalog:register
-~~~
+```
 
 The backend token must be able to create/push the target repository and include
 the generated GitHub Actions workflow. The owner must be a Catalog group; local
@@ -418,21 +457,26 @@ github.com, and the generated default branch is main.
 
 The form supports three runtime modes:
 
-| Mode | Without a host | With a compatible host |
-| --- | --- | --- |
-| standalone | Runs standalone | Still ignores the host |
-| platform-mfe | Shows Platform host required | Runs hosted through host adapters |
-| standalone-and-mfe | Runs standalone | Runs hosted when a host is present |
+| Mode               | Without a host               | With a compatible host             |
+| ------------------ | ---------------------------- | ---------------------------------- |
+| standalone         | Runs standalone              | Still ignores the host             |
+| platform-mfe       | Shows Platform host required | Runs hosted through host adapters  |
+| standalone-and-mfe | Runs standalone              | Runs hosted when a host is present |
 
 The form defaults to platform-mfe, but this repository does not ship a
 production Super App or Module Federation host. Choose standalone or
 standalone-and-mfe for a generated app that should run locally without a host.
 
+The form's capability step is a real composition boundary: selected Feature
+Packs add generated routes, navigation, screens, interactions and focused
+tests. Recorded-only identifiers remain metadata and do not imply shipped
+runtime behavior.
+
 Every generated app records:
 
-~~~json
+```json
 "runtime": { "type": "module-federation", "status": "not-configured" }
-~~~
+```
 
 This is metadata for a future runtime boundary; it does not install or wire
 Module Federation.
@@ -441,7 +485,7 @@ Module Federation.
 
 From the generated repository:
 
-~~~bash
+```bash
 npm ci
 npm run dev
 npm run typecheck
@@ -449,7 +493,7 @@ npm run lint
 npm test
 npm run build
 npm run test:e2e
-~~~
+```
 
 The generated project uses npm and includes a committed package-lock.json.
 Use Node.js >=22.12 and keep the manifest and lockfile synchronized.
@@ -459,13 +503,18 @@ vendored @platform/ui and @platform/sdk, a typed API client with timeout
 and cancellation, standard feedback states, test suites and GitHub Actions CI.
 See the [App Factory guide](docs/app-template.md) for the generated layout.
 
+The source-backed local capture in the Thai section shows the generated shell,
+navigation and representative Dashboard/Settings screens. Those screens prove
+the shared foundation and generic feature behavior; product/domain UX can still
+use different routes, copy, data and workflows within the same foundation.
+
 ### Configure API and authentication
 
 Copy .env.example to .env.local in the generated app:
 
-~~~bash
+```bash
 cp .env.example .env.local
-~~~
+```
 
 Use VITE_API_BASE_URL for the backend API. To enable the generated public
 OIDC client, set both VITE_AUTH_ISSUER_URL and VITE_AUTH_CLIENT_ID; the
@@ -532,7 +581,7 @@ boundaries, not as shipped runtime features.
 
 Platform checks:
 
-~~~bash
+```bash
 node .yarn/releases/yarn-4.13.0.cjs lint:all
 node .yarn/releases/yarn-4.13.0.cjs tsc
 node .yarn/releases/yarn-4.13.0.cjs test:all
@@ -540,7 +589,7 @@ node .yarn/releases/yarn-4.13.0.cjs build:all
 node .yarn/releases/yarn-4.13.0.cjs build:portal
 docker compose config --quiet
 node .yarn/releases/yarn-4.13.0.cjs test:e2e:smoke
-~~~
+```
 
 Common fixes:
 
